@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="paper">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger: A Financial Life Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E6ECE2;--paper2:#D9E2D3;--sheet:#EEF2EA;--note:#D3E2D0;
+  --ink:#183A2E;--ink2:#4E685C;--rule:#B6C6B3;--red:#B3362B;--blue:#2E4F8F;--gain:#1D6B44;
+  --a1:#183A2E;--a2:#2E4F8F;--a3:#B3362B;--a4:#8A6A1F;--a5:#6B4C8A;--a6:#2F7F7A;--a7:#9A5B3C;--a8:#5E6A72;
+  --fs:16px;--ease:cubic-bezier(.2,.7,.2,1);
+  --serif:"Bodoni Moda","Bodoni 72",Didot,"Didot LT STD",Georgia,serif;
+  --sans:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
+}
+[data-theme=night]{--paper:#0F1E18;--paper2:#16291F;--sheet:#132219;--note:#1A3127;--ink:#DCE7DA;--ink2:#93A99C;--rule:#2E453A;--red:#E57A68;--blue:#93ADEB;--gain:#74D3A0;
+  --a1:#DCE7DA;--a2:#93ADEB;--a3:#E57A68;--a4:#D8B45E;--a5:#B79BE0;--a6:#6CC7C0;--a7:#D79772;--a8:#A6B3BB}
+[data-theme=contrast]{--paper:#FFFFFF;--paper2:#F0F0F0;--sheet:#FFFFFF;--note:#FFFFFF;--ink:#000;--ink2:#1E1E1E;--rule:#000;--red:#A00000;--blue:#0033AA;--gain:#006B2E}
+html{font-size:var(--fs);background:var(--paper)}
+*{box-sizing:border-box}
+body{margin:0;color:var(--ink);background:var(--paper);font:400 1rem/1.55 var(--sans);font-feature-settings:"tnum" 1,"lnum" 1;-webkit-font-smoothing:antialiased;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .09 0 0 0 0 .23 0 0 0 0 .18 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+[data-theme=contrast] body{background-image:none}
+h1,h2,h3,p{margin:0}
+h1{font:500 clamp(2.2rem,4vw,2.9rem)/1.05 var(--serif);letter-spacing:-.01em}
+h2{font:500 1.55rem/1.15 var(--serif)}
+h3{font:600 1rem/1.3 var(--sans)}
+p+p{margin-top:.6em}
+a{color:var(--blue)}
+.serif{font-family:var(--serif)}
+.soft{color:var(--ink2)}.gain{color:var(--gain)}.loss{color:var(--red)}
+.small{font-size:.875rem}.tiny{font-size:.8rem}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;padding:.55rem 1.1rem;border:1.5px solid var(--ink);border-radius:3px;font-weight:600;font-size:.95rem;color:var(--ink);background:transparent;transition:background .15s,color .15s,transform .1s}
+.btn:hover{background:var(--paper2)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--ink);color:var(--paper);box-shadow:inset 0 0 0 2px var(--ink),inset 0 0 0 3px var(--paper)}
+.btn.primary:hover{background:var(--blue);border-color:var(--blue);box-shadow:inset 0 0 0 2px var(--blue),inset 0 0 0 3px var(--paper)}
+.btn.quiet{border-color:var(--rule)}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.sm{min-height:36px;padding:.3rem .8rem;font-size:.875rem}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.link{color:var(--blue);text-decoration:underline;text-underline-offset:3px;font-weight:600;padding:0;min-height:auto}
+
+/* fields */
+input[type=text],input[type=number],select{font:inherit;color:var(--ink);background:transparent;border:0;border-bottom:1.5px solid var(--ink2);border-radius:0;padding:.5rem .1rem;min-height:44px;width:100%}
+input[type=text]:focus,input[type=number]:focus,select:focus{outline:none;border-bottom-color:var(--blue);box-shadow:0 1.5px 0 var(--blue)}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink) 50%),linear-gradient(-45deg,transparent 50%,var(--ink) 50%);background-position:calc(100% - 12px) 55%,calc(100% - 7px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:24px}
+input[type=range]{width:100%;accent-color:var(--ink);height:28px}
+label,.lab{display:block;font-size:.85rem;color:var(--ink2);font-weight:500}
+.seg{display:inline-flex;flex-wrap:wrap}
+.seg button{border:1.5px solid var(--rule);margin-left:-1.5px;padding:.4rem .8rem;min-height:38px;font-size:.875rem;font-weight:600;color:var(--ink2);transition:background .15s,color .15s}
+.seg button:first-child{margin-left:0;border-radius:3px 0 0 3px}.seg button:last-child{border-radius:0 3px 3px 0}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-checked=true]{background:var(--ink);color:var(--paper);border-color:var(--ink);position:relative;z-index:1}
+.seg.full{display:flex}.seg.full button{flex:1}
+
+/* masthead + tabs */
+.mast{display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:end;padding:22px 36px 14px;max-width:1320px;margin:0 auto}
+.word{font:600 2rem/1 var(--serif);letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.word svg{width:34px;height:34px}
+.when{display:flex;flex-direction:column;gap:6px;min-width:0}
+.when .d{display:flex;align-items:baseline;gap:14px;overflow:hidden;height:2.1rem}
+.when .d b{font:500 1.75rem/1.2 var(--serif);display:inline-block}
+.when .d b.flip{animation:flip .55s var(--ease)}
+@keyframes flip{from{transform:translateY(80%);opacity:0}}
+.ruler{position:relative;height:14px}
+.ruler svg{display:block;width:100%;height:14px;overflow:visible}
+.ruler .fill{transition:width .6s var(--ease)}
+.acts{display:flex;gap:8px;align-items:center}
+.stats{display:flex;gap:26px;flex-wrap:wrap;font-size:.875rem;color:var(--ink2)}
+.stats b{color:var(--ink);font-weight:600}
+.tabs{display:flex;gap:0;padding:0 36px;max-width:1320px;margin:0 auto;overflow-x:auto;scrollbar-width:none;position:relative}
+.tabs::after{content:"";position:absolute;left:36px;right:36px;bottom:0;height:1.5px;background:var(--ink)}
+.tabs button{position:relative;padding:10px 18px 9px;margin-right:-1px;border:1.5px solid var(--rule);border-bottom:0;border-radius:7px 7px 0 0;background:var(--paper2);color:var(--ink2);font-weight:600;font-size:.92rem;white-space:nowrap;top:3px;transition:top .15s,color .15s}
+.tabs button:hover{top:0;color:var(--ink)}
+.tabs button[aria-current=page]{background:var(--sheet);color:var(--ink);border-color:var(--ink);top:0;z-index:2;padding-bottom:12px;margin-bottom:-1.5px}
+.tabs .n{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:6px;border-radius:9px;background:var(--red);color:var(--paper);font-size:.7rem}
+.sheet{background:var(--sheet)}
+.page{max-width:1320px;margin:0 auto;padding:34px 36px 80px;view-transition-name:page}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:28px}
+.head p{max-width:60ch;margin-top:8px;color:var(--ink2)}
+
+/* layout */
+.grid{display:grid;gap:36px 40px;grid-template-columns:repeat(12,minmax(0,1fr))}
+.c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c12{grid-column:1/-1}
+.sec h2{margin-bottom:14px}
+.sec>.top{display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.sec>.top h2{margin:0}
+.inset{background:var(--paper2);border-radius:4px;padding:22px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:120px}
+
+/* ledger lines */
+.ln{display:flex;align-items:baseline;gap:8px;padding:7px 0}
+.ln .lbl{white-space:nowrap}
+.ln .dots{flex:1;border-bottom:2px dotted var(--rule);transform:translateY(-4px);min-width:16px}
+.ln .val{font-weight:600;white-space:nowrap}
+.ln.tot{border-top:1.5px solid var(--ink);margin-top:6px;padding-top:10px}
+.ln.tot .lbl,.ln.tot .val{font-weight:700}
+.ln small{color:var(--ink2);font-size:.8rem;margin-left:4px}
+
+/* the banknote */
+.note{position:relative;background:var(--note);border-radius:6px;padding:14px;overflow:hidden;isolation:isolate;min-height:250px}
+.note>svg.bg{position:absolute;inset:0;width:100%;height:100%;z-index:-1;color:var(--ink);opacity:.22}
+.note .frame{position:relative;height:100%;min-height:222px;border:1.5px solid var(--ink);outline:1px solid var(--ink);outline-offset:-6px;border-radius:3px;display:grid;grid-template-columns:150px 1fr;gap:28px;align-items:center;padding:22px 30px}
+.portrait{width:140px;height:170px;border-radius:50%;overflow:hidden;border:1.5px solid var(--ink);outline:1px solid var(--ink);outline-offset:4px;background:var(--paper2);display:grid;place-items:center}
+.portrait svg{width:180px;height:180px;margin-top:18px;filter:grayscale(1) contrast(1.15);mix-blend-mode:multiply;opacity:.92}
+[data-theme=night] .portrait svg{mix-blend-mode:normal;opacity:.85}
+.note .k{font-size:.95rem;color:var(--ink2)}
+.note .v{font:500 clamp(3rem,6.4vw,5.2rem)/1 var(--serif);letter-spacing:-.025em;margin:4px 0 8px}
+.note .serial{position:absolute;top:14px;right:22px;color:var(--red);font:600 .95rem/1 var(--sans);letter-spacing:.14em}
+.note .serial.b{top:auto;bottom:14px;left:auto}
+.stampmark{position:absolute;right:36px;bottom:30px;color:var(--red);border:3px double var(--red);border-radius:4px;padding:6px 14px;font:700 1.3rem/1 var(--sans);letter-spacing:.04em;transform:rotate(-7deg);opacity:.86;pointer-events:none;mix-blend-mode:multiply}
+[data-theme=night] .stampmark{mix-blend-mode:normal}
+.stampmark.go{animation:thump .5s var(--ease)}
+@keyframes thump{0%{transform:rotate(-7deg) scale(2.2);opacity:0}55%{transform:rotate(-7deg) scale(.94);opacity:.95}100%{transform:rotate(-7deg) scale(1);opacity:.86}}
+.memo{border-left:3px solid var(--red);padding:4px 0 4px 20px}
+.memo p{font:italic 400 1.3rem/1.4 var(--serif)}
+.memo .act{margin-top:12px}
+
+/* allocation strip */
+.strip{display:flex;height:22px;border:1.5px solid var(--ink);border-radius:2px;overflow:hidden}
+.strip i{display:block;height:100%;border-right:1.5px solid var(--paper)}
+.strip i:last-child{border-right:0}
+.key{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:8px;vertical-align:-1px}
+
+/* tables */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th{text-align:left;font-size:.85rem;font-weight:600;color:var(--ink2);padding:8px 10px;border-bottom:1.5px solid var(--ink)}
+td{padding:11px 10px;border-bottom:1px solid var(--rule);vertical-align:middle}
+td.r,th.r{text-align:right}
+tr.pick{cursor:pointer}
+tr.pick:hover td{background:var(--paper2)}
+tr.pick.on td{background:var(--paper2)}
+tr.pick.on td:first-child{box-shadow:inset 3px 0 0 var(--ink)}
+.tk{font-weight:700;letter-spacing:.02em}
+
+/* charts */
+.chart{position:relative}
+.chart canvas{display:block;width:100%}
+.tip{position:absolute;pointer-events:none;background:var(--sheet);border:1.5px solid var(--ink);border-radius:3px;padding:6px 10px;font-size:.8rem;white-space:nowrap;transform:translate(-50%,-120%);opacity:0;transition:opacity .1s;z-index:3}
+
+/* measures */
+.meter{height:6px;background:var(--paper2);border-radius:1px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--ink);transition:width .6s var(--ease)}
+.check{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--rule)}
+.check:last-child{border:0}
+.box{width:18px;height:18px;border:1.5px solid var(--ink);border-radius:2px;flex:none;margin-top:3px;display:grid;place-items:center}
+.box svg{width:14px;height:14px}
+
+/* entries list */
+.entries .e{display:grid;grid-template-columns:76px 1fr;gap:14px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.entries .e:last-child{border:0}
+.entries .e time{color:var(--ink2);font-size:.85rem}
+.entries .e.g{color:var(--gain)}.entries .e.l{color:var(--red)}
+.empty{color:var(--ink2);padding:18px 0}
+
+/* budget rows */
+.brow{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(0,2fr) 92px;gap:18px;align-items:center;padding:13px 0;border-bottom:1px solid var(--rule)}
+.brow:last-child{border-bottom:0}
+.brow b{font-weight:600;display:block}
+.brow small{color:var(--ink2);font-size:.82rem}
+.brow .amt{text-align:right;font-weight:600}
+.split{display:flex;height:12px;border:1.5px solid var(--ink);border-radius:2px;overflow:hidden;position:relative}
+.split i{display:block;height:100%;transition:width .4s var(--ease)}
+.marks{position:relative;height:16px}
+.marks span{position:absolute;top:2px;font-size:.75rem;color:var(--ink2);transform:translateX(-50%)}
+.marks span::before{content:"";position:absolute;left:50%;top:-6px;width:1.5px;height:6px;background:var(--ink)}
+
+/* slips (order ticket, offers) */
+.slip{background:var(--sheet);border:1.5px solid var(--ink);border-radius:3px;padding:22px;position:relative}
+.slip.perf{border-top:2px dashed var(--ink2)}
+.offers{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.offer{border-top:1.5px solid var(--ink);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.offer h3{font:500 1.25rem/1.2 var(--serif)}
+.offer .terms{color:var(--ink2);font-size:.9rem}
+.offer.off{opacity:.5}
+.lock{display:flex;gap:10px;align-items:center;color:var(--ink2);font-size:.9rem;border:1.5px dashed var(--rule);border-radius:3px;padding:12px 14px}
+
+/* payment cards */
+.ccs{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:24px}
+.cc{aspect-ratio:1.586;border-radius:12px;padding:18px 20px;color:#F2F5EF;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;isolation:isolate}
+.cc svg.bg{position:absolute;inset:0;width:100%;height:100%;z-index:-1;color:#fff;opacity:.13}
+.cc .nm{font:500 1.15rem/1.1 var(--serif)}
+.cc .bal{font:500 1.9rem/1 var(--serif)}
+.cc .chip{width:36px;height:27px;border-radius:5px;background:linear-gradient(135deg,#d9c38a,#9d8547);opacity:.9}
+
+/* gauge */
+.gauge text{font-family:var(--sans)}
+.gauge .needle{transition:transform .9s var(--ease);transform-origin:120px 120px}
+
+/* stamps (awards) */
+.stamps{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:26px}
+.stampc{background:var(--note);padding:10px;border:7px dotted var(--sheet);filter:drop-shadow(0 1px 1px rgba(24,58,46,.18))}
+.stampc .in{border:1.5px solid var(--ink);padding:14px;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;gap:10px;position:relative;overflow:hidden;isolation:isolate}
+.stampc .in svg{position:absolute;right:-30px;top:-30px;width:120px;height:120px;color:var(--ink);opacity:.25;z-index:-1}
+.stampc b{font:500 1.2rem/1.15 var(--serif)}
+.stampc.off{opacity:.42}
+.stampc.off .in{border-style:dashed}
+
+/* title */
+.title{min-height:100vh;display:grid;grid-template-columns:1.15fr .85fr}
+.hero{position:relative;padding:44px 56px;display:flex;flex-direction:column;overflow:hidden;isolation:isolate}
+.hero .ros{position:absolute;width:min(78vh,760px);aspect-ratio:1;right:-18%;top:50%;transform:translateY(-50%);color:var(--ink);opacity:.36;z-index:-1}
+.hero .ros path{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 2.6s var(--ease) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.hero h1{font:500 clamp(5rem,13vw,11rem)/.82 var(--serif);letter-spacing:-.045em;margin-top:auto}
+.hero .lead{font:400 1.35rem/1.45 var(--serif);max-width:30ch;margin:56px 0 30px}
+.hero .facts{columns:2;gap:28px;max-width:560px;color:var(--ink2);font-size:.92rem;margin-bottom:34px}
+.hero .facts div{break-inside:avoid;padding:5px 0;border-top:1px solid var(--rule)}
+.form{background:var(--sheet);border-left:1.5px solid var(--ink);padding:44px 48px;display:flex;flex-direction:column;justify-content:center}
+.form h2{font-size:2.1rem;margin-bottom:6px}
+.prog{display:flex;gap:6px;margin-bottom:24px}
+.prog span{flex:1;font-size:.8rem;color:var(--ink2);border-top:3px solid var(--rule);padding-top:6px}
+.prog span.on{border-color:var(--ink);color:var(--ink);font-weight:600}
+.opts{display:flex;flex-direction:column;margin:18px 0}
+.opts button{display:grid;grid-template-columns:22px 1fr;gap:14px;text-align:left;padding:14px 4px;border-bottom:1px solid var(--rule);min-height:44px}
+.opts button:first-child{border-top:1px solid var(--rule)}
+.opts .dot{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--ink);margin-top:4px;display:grid;place-items:center}
+.opts button[aria-checked=true] .dot::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.opts button:hover .dot{background:var(--paper2)}
+.opts b{font:500 1.25rem/1.2 var(--serif);display:block}
+.opts small{display:block;color:var(--ink2);font-size:.9rem;margin-top:2px}
+.opts .f{display:block;color:var(--ink);font-size:.85rem;margin-top:6px;font-weight:600}
+.av{display:grid;grid-template-columns:120px 1fr;gap:24px;align-items:center;margin:18px 0}
+.sw{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.sw button{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--rule)}
+.sw button[aria-checked=true]{outline:2px solid var(--ink);outline-offset:2px}
+.wnav{display:flex;justify-content:space-between;margin-top:22px}
+
+/* letters (modal) */
+dialog{border:1.5px solid var(--ink);background:var(--sheet);color:var(--ink);border-radius:5px;padding:0;width:min(620px,94vw);max-height:92vh;box-shadow:0 40px 80px -30px rgba(10,30,22,.55)}
+dialog.wide{width:min(760px,96vw)}
+dialog::backdrop{background:rgba(18,40,32,.42);backdrop-filter:blur(2px)}
+dialog[open]{animation:letter .38s var(--ease)}
+dialog.closing{animation:letterout .18s ease-in forwards}
+@keyframes letter{from{transform:translateY(28px) rotate(-.8deg);opacity:0}}
+@keyframes letterout{to{transform:translateY(14px);opacity:0}}
+#mbody{padding:34px 36px;overflow:auto;max-height:92vh}
+.swap{animation:swap .32s var(--ease)}
+@keyframes swap{from{transform:translateX(18px);opacity:0}}
+.lt{position:relative}
+.lt h2{font-size:2rem;margin:4px 0 12px;padding-right:96px}
+.lt .from{color:var(--ink2);font-size:.9rem}
+.lt p{max-width:60ch}
+.post{position:absolute;top:-6px;right:-4px;width:96px;height:96px;color:var(--ink2)}
+.ctx{display:flex;gap:22px;flex-wrap:wrap;margin:18px 0 6px;font-size:.875rem;color:var(--ink2)}
+.ctx b{color:var(--ink)}
+.choices{display:flex;flex-direction:column;margin-top:18px;border-top:1.5px solid var(--ink)}
+.choices button{display:grid;grid-template-columns:22px 1fr auto;gap:14px;align-items:center;text-align:left;padding:15px 4px;border-bottom:1px solid var(--rule);min-height:54px;transition:background .12s}
+.choices button:hover{background:var(--paper2)}
+.choices button .dot{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--ink)}
+.choices button:hover .dot{background:var(--ink)}
+.choices button b{font-weight:600}
+.choices button small{color:var(--ink2);font-size:.85rem;text-align:right}
+.choices.go button{grid-template-columns:1fr auto}
+.why{margin-top:22px;padding:16px 0 0;border-top:1.5px solid var(--ink)}
+.why h3{margin-bottom:4px}
+.bigstamp{display:inline-block;color:var(--red);border:3px double var(--red);border-radius:4px;padding:8px 16px;font:700 1.15rem/1 var(--sans);letter-spacing:.04em;text-transform:uppercase;transform:rotate(-4deg);margin:6px 0 14px;animation:thump .5s var(--ease)}
+.warn{border-left:3px solid var(--red);padding:6px 0 6px 14px;margin:12px 0;color:var(--red);font-weight:600}
+.q{display:flex;flex-direction:column;margin:16px 0}
+.q button{text-align:left;padding:13px 6px;border-bottom:1px solid var(--rule);min-height:48px;display:flex;justify-content:space-between;gap:10px}
+.q button:first-child{border-top:1.5px solid var(--ink)}
+.q button:hover:not(:disabled){background:var(--paper2)}
+.q button.right{color:var(--gain);font-weight:700}
+.q button.right::after{content:"Correct";font-weight:600}
+.q button.wrong{color:var(--red);text-decoration:line-through}
+.q button:disabled{cursor:default}
+.grade{font:500 clamp(7rem,18vw,12rem)/.8 var(--serif);letter-spacing:-.05em}
+
+/* slips (toasts) */
+#toasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:60;width:min(460px,92vw);pointer-events:none}
+.toast{background:var(--sheet);border:1.5px solid var(--ink);border-radius:3px;padding:11px 16px;box-shadow:0 14px 30px -18px rgba(10,30,22,.5);animation:slipin .35s var(--ease);font-size:.92rem;width:100%;pointer-events:auto}
+.toast.g{border-left:5px solid var(--gain)}.toast.l{border-left:5px solid var(--red)}
+.toast.out{animation:slipout .25s ease-in forwards}
+@keyframes slipin{from{transform:translateY(16px);opacity:0}}
+@keyframes slipout{to{transform:translateY(10px);opacity:0}}
+
+/* view transitions */
+::view-transition-old(root),::view-transition-new(root){animation:none}
+::view-transition-old(page){animation:vtout .16s ease-in both}
+::view-transition-new(page){animation:vtin .32s var(--ease) both}
+html[data-dir="-1"]::view-transition-new(page){animation-name:vtinl}
+@keyframes vtout{to{opacity:0}}
+@keyframes vtin{from{opacity:0;transform:translateX(22px)}}
+@keyframes vtinl{from{opacity:0;transform:translateX(-22px)}}
+.count{display:inline-block}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after,::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important;transition:none!important}.hero .ros path{stroke-dashoffset:0}}
+html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition:none!important}
+html.rm .hero .ros path{stroke-dashoffset:0}
+@media (max-width:1100px){.c3,.c4,.c5{grid-column:span 6}.c7,.c8{grid-column:1/-1}}
+@media (max-width:860px){
+  .mast{grid-template-columns:1fr auto;padding:16px 18px 10px;gap:14px}
+  .when{grid-column:1/-1;order:3}
+  .word{font-size:1.6rem}
+  .tabs{padding:0 18px}.tabs::after{left:18px;right:18px}
+  .page{padding:24px 18px 60px}
+  .c3,.c4,.c5,.c6,.c7,.c8{grid-column:1/-1}
+  .note .frame{grid-template-columns:1fr;padding:22px}
+  .portrait{display:none}
+  .title{grid-template-columns:1fr}
+  .hero{padding:30px 22px;min-height:70vh}
+  .hero .facts{columns:1}
+  .form{border-left:0;border-top:1.5px solid var(--ink);padding:30px 22px}
+  .brow{grid-template-columns:1fr 80px}.brow .ctl{grid-column:1/-1;order:3}
+  #mbody{padding:26px 22px}
+  .stats{gap:14px}
+}
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+<dialog id="modal" aria-modal="true"><div id="mbody"></div></dialog>
+<div id="toasts" aria-live="polite"></div>
+<div id="live" class="sr" aria-live="assertive"></div>
+<script id="engine">
+"use strict";
+const R=Math.random;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function gauss(){let u=0,v=0;while(!u)u=R();while(!v)v=R();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONF=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const dateStr=m=>MON[((m%12)+12)%12]+" "+(2027+Math.floor(m/12));
+const dateLong=m=>MONF[m%12]+" "+(2027+Math.floor(m/12));
+const fm=(n,d=0)=>(n<0?"−$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fk=n=>{const a=Math.abs(n),s=n<0?"−$":"$";return a>=1e6?s+(a/1e6).toFixed(2)+"M":a>=1e4?s+(a/1e3).toFixed(1)+"k":s+Math.round(a).toLocaleString()};
+const fneg=n=>"−"+fm(Math.abs(n));
+const pc=(n,d=1)=>(n*100).toFixed(d)+"%";
+
+const CITIES={
+  phx:{n:"Phoenix, AZ",col:1.0,stateTax:.025,rent:[350,780,1250,1550],home:1.0,d:"Affordable sun-belt metro, flat 2.5% state tax.",ic:"🌵"},
+  aus:{n:"Austin, TX",col:1.12,stateTax:0,rent:[350,880,1400,1750],home:1.15,d:"Booming tech hub, no state income tax.",ic:"🎸"},
+  nyc:{n:"New York, NY",col:1.55,stateTax:.06,rent:[450,1400,2400,3200],home:2.1,d:"Highest pay and highest costs anywhere.",ic:"🗽"},
+  cbus:{n:"Columbus, OH",col:.9,stateTax:.03,rent:[300,650,1050,1300],home:.8,d:"Low cost of living and cheap homes.",ic:"🏟️"}};
+const HOUSING=["Live with family","Roommates","Studio","1-bedroom"];
+const PATHS={
+  work:{n:"Enter the workforce",ic:"🛒",d:"Start earning on day one with no debt. Climb by building skills.",school:0,loan:0,job:"retail1",facts:["$32k/yr start","$0 debt"]},
+  trade:{n:"Trade school",ic:"⚡",d:"12 months of electrician training, then strong skilled-trade wages.",school:12,loan:9000,eduAfter:"trade",job:"elec1",ptPay:18000,facts:["12 mo training","$9k loan","$46k after"]},
+  college:{n:"Four-year college",ic:"🎓",d:"Four years of school and a large loan for the highest salary ceiling.",school:48,loan:32000,eduAfter:"degree",job:"anl1",ptPay:16000,facts:["48 mo school","$32k loan","$62k after"]},
+  biz:{n:"Start a business",ic:"🚐",d:"A $6,000 loan launches Shine Mobile Detailing. Volatile, but uncapped.",school:0,loan:6000,job:"biz",facts:["$6k loan","Income varies","No ceiling"]}};
+const JOBS={
+  student:{t:"Student, part-time job",s:0,edu:"hs",sk:0,f:"School"},
+  biz:{t:"Owner, Shine Mobile Detailing",s:0,edu:"hs",sk:0,f:"Business"},
+  retail1:{t:"Retail Associate",s:32000,edu:"hs",sk:0,f:"Retail"},
+  retail2:{t:"Shift Supervisor",s:41000,edu:"hs",sk:2.5,f:"Retail"},
+  retail3:{t:"Store Manager",s:56000,edu:"hs",sk:5,f:"Retail"},
+  book:{t:"Bookkeeper",s:47000,edu:"hs",sk:3,cert:"bookc",f:"Finance"},
+  elec1:{t:"Apprentice Electrician",s:46000,edu:"trade",sk:0,f:"Trades"},
+  elec2:{t:"Journeyman Electrician",s:64000,edu:"trade",sk:3,f:"Trades"},
+  elec3:{t:"Master Electrician",s:86000,edu:"trade",sk:6.5,f:"Trades"},
+  anl1:{t:"Junior Financial Analyst",s:62000,edu:"degree",sk:0,f:"Finance"},
+  anl2:{t:"Financial Analyst",s:78000,edu:"degree",sk:3,f:"Finance"},
+  anl3:{t:"Senior Analyst",s:99000,edu:"degree",sk:6,f:"Finance"},
+  anl4:{t:"Finance Manager",s:126000,edu:"degree",sk:8.5,f:"Finance"}};
+const EDU={hs:"High school diploma",trade:"Electrician license",degree:"Bachelor's degree"};
+const COURSES=[
+  {id:"online",n:"Online skills course",cost:300,sk:.8,d:"Self-paced lessons. +0.8 skill."},
+  {id:"bookc",n:"Bookkeeping certificate",cost:1200,sk:1,d:"Unlocks Bookkeeper roles. +1 skill.",once:true},
+  {id:"lead",n:"Leadership workshop",cost:850,sk:1.5,d:"+1.5 skill. Managers notice.",once:true},
+  {id:"cfin",n:"Advanced finance certification",cost:2600,sk:2.5,req:"degree",d:"+2.5 skill. Degree required.",once:true}];
+const ASSETS=[
+  {s:"VTX",n:"Vantage Total Market Index",sec:"Index",beta:1,idio:.006,div:.014,p:100,alpha:0,c:"#7cc4ff",d:"Holds a sliver of about 3,000 companies. The classic diversified core holding."},
+  {s:"BND",n:"Anchor Aggregate Bond Fund",sec:"Bonds",beta:.08,idio:.008,div:.038,p:50,alpha:-.0005,rate:true,c:"#b9a2ff",d:"Government and corporate bonds. Steady income; falls when interest rates rise."},
+  {s:"NOVA",n:"Nova Robotics",sec:"Tech",beta:1.45,idio:.08,div:0,p:140,alpha:.002,c:"#ff9ecf",d:"Fast-growing robotics company. Big upside, big swings, no dividend."},
+  {s:"HLIO",n:"Helio Energy",sec:"Energy",beta:.85,idio:.065,div:.031,p:62,alpha:0,c:"#f4b740",d:"Oil, gas and a growing solar arm. Sensitive to energy prices."},
+  {s:"MEDX",n:"Medix Health",sec:"Healthcare",beta:.65,idio:.05,div:.018,p:88,alpha:.001,c:"#5ad39c",d:"Pharmaceuticals and devices. Defensive: people need healthcare in any economy."},
+  {s:"CART",n:"Cartwheel Retail",sec:"Consumer",beta:1.1,idio:.06,div:.021,p:45,alpha:-.0005,c:"#ff7a66",d:"Big-box retailer. Rises and falls with consumer spending."},
+  {s:"KEYS",n:"Keystone Realty REIT",sec:"Real Estate",beta:.9,idio:.045,div:.046,p:30,alpha:-.001,rate:true,c:"#9ad0c2",d:"Owns apartments and warehouses. High dividends; rate-sensitive."},
+  {s:"BYTE",n:"Bytecoin",sec:"Crypto",beta:1.9,idio:.19,div:0,p:12,alpha:.004,c:"#e8e2cf",d:"A speculative cryptocurrency. Produces no cash flow; price is driven by hype."}];
+const AS=Object.fromEntries(ASSETS.map(a=>[a.s,a]));
+const REG={
+  bull:{n:"Bull market",mu:.011,sd:.032,fedT:4.25,infT:.03},
+  normal:{n:"Steady growth",mu:.0055,sd:.04,fedT:3.5,infT:.026},
+  bear:{n:"Bear market",mu:-.013,sd:.055,fedT:3.25,infT:.033},
+  rec:{n:"Recession",mu:-.02,sd:.065,fedT:1.25,infT:.015}};
+const TRANS={bull:{bull:.9,normal:.08,bear:.02},normal:{bull:.1,normal:.84,bear:.05,rec:.01},bear:{normal:.12,bear:.78,rec:.08,bull:.02},rec:{rec:.75,normal:.17,bear:.08}};
+const MACRO={bull:"Markets hit record highs as hiring booms",normal:"Economy settles into steady, moderate growth",bear:"Stocks slide as investors brace for a slowdown",rec:"Economists declare a recession; layoffs spread"};
+const NEWS={
+  Tech:[["Nova Robotics unveils a home assistant robot; preorders crash its site",.16],["Regulators open an antitrust probe into Nova Robotics",-.14],["Nova misses earnings as a chip shortage bites",-.11],["Nova lands a $2B logistics contract",.12]],
+  Energy:[["Oil spikes on supply cuts; Helio Energy rallies",.1],["Helio's flagship solar farm delayed by permitting fight",-.08],["Mild winter crushes natural gas demand",-.07]],
+  Healthcare:[["Medix Health wins approval for a new diabetes drug",.13],["Medix recalls a popular glucose monitor",-.12]],
+  Consumer:[["Cartwheel posts record holiday sales",.1],["Shoppers pull back; Cartwheel cuts its forecast",-.1]],
+  "Real Estate":[["Office vacancies climb; Keystone REIT slides",-.08],["Keystone buys warehouses at a steep discount",.07]],
+  Crypto:[["Major exchange lists Bytecoin; price surges",.34],["Bytecoin exchange hacked, investors panic",-.38],["A celebrity posts about Bytecoin",.2],["Regulators crack down on crypto lending",-.25]]};
+const CARDS=[
+  {id:"secured",n:"Foundation Secured",min:0,thin:true,limit:500,apr:27.9,rew:0,dep:500,c1:"#3a4a44",c2:"#1c2622",d:"Backed by a $500 refundable deposit. Approves anyone."},
+  {id:"student",n:"Campus Starter",min:620,thin:true,limit:1500,apr:24.9,rew:.01,c1:"#2f5f8a",c2:"#173350",d:"Built for first-timers. 1% cash back."},
+  {id:"rewards",n:"Horizon Cash Rewards",min:690,limit:5000,apr:22.9,rew:.015,c1:"#a6631a",c2:"#4d2a07",d:"1.5% cash back on everything."},
+  {id:"premium",n:"Summit Signature",min:750,limit:12000,apr:19.9,rew:.02,c1:"#2b2b2b",c2:"#0a0a0a",d:"2% cash back, high limit, lowest APR."}];
+const CARS=[{n:"2016 Compact Sedan",p:9500,ic:"🚗"},{n:"2022 Hybrid Crossover",p:22000,ic:"🚙"},{n:"New Full-Size Pickup",p:46000,ic:"🛻"}];
+const HOMES=[{n:"Starter Condo",p:215000,ic:"🏢"},{n:"Townhouse",p:300000,ic:"🏘️"},{n:"Single-Family Home",p:405000,ic:"🏡"}];
+const BR=[[12400,.10],[50400,.12],[105700,.22],[201775,.24],[256225,.32],[640600,.35],[Infinity,.37]];
+const STD_DED=16100;
+function fedTax(inc){inc=Math.max(0,inc-STD_DED);let t=0,prev=0;for(const[c,r]of BR){if(inc>prev){t+=(Math.min(inc,c)-prev)*r;prev=c}else break}return t}
+function margRate(inc){inc=Math.max(0,inc-STD_DED);for(const[c,r]of BR)if(inc<=c)return r;return .37}
+function amort(P,ratePct,n){const r=ratePct/100/12;return r?P*r/(1-Math.pow(1+r,-n)):P/n}
+
+/* ---------- state ---------- */
+const wm=G=>1+(CITIES[G.city].col-1)*.55;
+function newGame(o){
+  const P=PATHS[o.path];
+  const G={v:3,uid:1,name:o.name,av:o.av,city:o.city,path:o.path,diff:o.diff,years:o.years,m:0,
+    cash:1500,hysa:0,cd:null,k401:0,k401pct:0,deposit:0,hold:{},px:{},regime:"normal",fed:3.5,inflR:.027,infl:1,homeIdx:1,lastRet:{},
+    cards:[],autopay:"full",cardPct:0,loans:[],lates:[],coll:0,inq:[],
+    job:null,salary:0,edu:"hs",skill:1,schoolLeft:P.school,evening:null,side:0,biz:null,unemp:0,prevJob:null,prevSalary:0,cool:{},courses:{},
+    budget:{housing:(P.school||o.path==="biz")?0:1,groceries:1,dining:P.school?60:120,subs:55,fun:P.school?90:160,giving:0,health:true,renters:false,autoSave:10,autoInvest:0,autoSym:"VTX",drip:true},
+    car:null,home:null,pet:false,wb:62,lessons:{},ach:{},evLast:{},
+    ytd:{wage:0,k401:0,other:0,gains:0,ord:0,withheld:0},lastYear:null,
+    hist:[],news:[],log:[],pending:[],flow:null,
+    stats:{intPaid:0,rewards:0,promos:0,grad:false,hadDebt:false,scamsAvoided:0,wbSum:0,start:0,peak:0,lateCount:0},
+    score:null,sf:null,over:false};
+  if(P.school){G.job="student";G.salary=P.ptPay*wm(G)}
+  else if(o.path==="biz"){G.job="biz";G.biz={rev:2400,re:.15,hist:[2400],profit:0}}
+  else{G.job=P.job;G.salary=JOBS[P.job].s*wm(G)}
+  if(P.loan){
+    if(o.path==="biz")addLoan(G,{n:"Business startup loan",type:"business",bal:P.loan,rate:+(G.fed+3.5).toFixed(2),term:60});
+    else addLoan(G,{n:"Federal student loan",type:"student",bal:P.loan,rate:5.5,term:120,defer:true});
+    G.stats.hadDebt=true}
+  for(const a of ASSETS)G.px[a.s]=[a.p];
+  for(let i=0;i<36;i++)stepMarket(G,true);
+  G.regime="normal";
+  calcScore(G);
+  G.stats.start=netWorth(G);
+  G.hist.push(snap(G));
+  news(G,"Welcome to "+CITIES[G.city].n+". Your financial life begins.","info");
+  return G}
+function addLoan(G,o){o.id="L"+(G.uid++);o.pmt=amort(o.bal,o.rate,o.term);o.opened=G.m;o.orig=o.bal;G.loans.push(o);return o}
+function news(G,t,k="info",sym){G.news.unshift({m:G.m,t,k,sym});G.news=G.news.slice(0,40)}
+function log(G,t,k=""){G.log.unshift({m:G.m,t,k});G.log=G.log.slice(0,80)}
+
+/* ---------- derived ---------- */
+const price=(G,s)=>{const a=G.px[s];return a[a.length-1]};
+const pxAgo=(G,s,n)=>{const a=G.px[s];return a[Math.max(0,a.length-1-n)]};
+const holdVal=G=>Object.entries(G.hold).reduce((t,[s,h])=>t+h.sh*price(G,s),0);
+const cardBal=G=>G.cards.reduce((t,c)=>t+c.bal,0);
+const cardLimit=G=>G.cards.reduce((t,c)=>t+c.limit,0);
+const cardAvail=G=>G.cards.reduce((t,c)=>t+Math.max(0,c.limit-c.bal),0);
+const loanBal=G=>G.loans.reduce((t,l)=>t+l.bal,0);
+const assetsTotal=G=>G.cash+G.hysa+(G.cd?G.cd.amt:0)+G.k401+holdVal(G)+(G.car?G.car.val:0)+(G.home?G.home.val:0)+G.deposit;
+const debtsTotal=G=>loanBal(G)+cardBal(G)+G.coll;
+const netWorth=G=>assetsTotal(G)-debtsTotal(G);
+const canK=G=>!!G.job&&!["biz","student"].includes(G.job)&&!G.unemp;
+const regularJob=G=>!!G.job&&!["biz","student"].includes(G.job)&&!G.unemp;
+const hysaRate=G=>Math.max(.25,G.fed-.35)/100;
+const sideRate=G=>20*CITIES[G.city].col*(G.lessons.ent?1.2:1);
+const maxApr=G=>G.cards.reduce((m,c)=>Math.max(m,c.apr),0);
+function budgetItems(G){
+  const C=CITIES[G.city],b=G.budget,I=G.infl,insM=G.lessons.ins?.85:1,it=[];
+  const add=(k,l,a,cat,card)=>{if(a>0.004)it.push({k,l,a,cat,card:!!card})};
+  if(G.home){const h=G.home;add("ptax","Property tax",h.val*.009/12,"need");add("hins","Homeowners insurance",h.val*.0035/12*insM,"need");add("maint","Home maintenance",h.val*.008/12,"need");
+    const mo=G.loans.find(l=>l.type==="mortgage");if(mo&&mo.bal/h.val>.8)add("pmi","Mortgage insurance (PMI)",mo.bal*.006/12,"need")}
+  else add("rent",b.housing===0?"Rent paid to family":"Rent",C.rent[b.housing]*I*(b.housing?(G.rentMul||1):1),"need");
+  add("util","Utilities & internet",(G.home?210:[0,75,120,140][b.housing])*C.col*I,"need");
+  add("groc","Groceries",[210,330,500][b.groceries]*C.col*I*(G.lessons.budget?.92:1),"need",1);
+  add("trans",G.car?"Gas & auto insurance":"Transit pass",G.car?(150+125*insM)*I:85*C.col*I,"need",1);
+  if(b.health){const hp=G.job==="student"?95:(G.job==="biz"||!G.job||G.unemp)?380:125;add("health","Health insurance",hp*I*insM,"need")}
+  if(b.renters&&!G.home)add("renters","Renters insurance",16*insM,"need");
+  if(G.pet)add("pet","Pet care",85*I,"need",1);
+  add("dine","Dining out",b.dining,"want",1);
+  add("subs","Phone & subscriptions",b.subs,"want",1);
+  add("fun","Fun & shopping",b.fun,"want",1);
+  add("give","Charitable giving",b.giving,"want");
+  return{items:it,total:it.reduce((s,i)=>s+i.a,0),needs:it.filter(i=>i.cat==="need").reduce((s,i)=>s+i.a,0),wants:it.filter(i=>i.cat==="want").reduce((s,i)=>s+i.a,0)}}
+const loanPmts=G=>G.loans.filter(l=>!l.defer).reduce((t,l)=>t+Math.min(l.pmt,l.bal*(1+l.rate/1200)),0);
+const cardMins=G=>G.cards.reduce((t,c)=>t+(c.bal>0?Math.min(c.bal,Math.max(25,c.bal*.02+c.bal*c.apr/1200)):0),0);
+function efMonths(G){const B=budgetItems(G);const ess=B.needs+loanPmts(G);return(G.cash+G.hysa+(G.cd?G.cd.amt:0))/Math.max(1,ess)}
+function grossMonthly(G){if(G.unemp)return 0;if(G.job==="biz")return Math.max(0,G.biz.profit||G.biz.rev*.4);return G.salary/12+G.side*4.33*sideRate(G)}
+function dti(G){const g=grossMonthly(G);return g>0?(loanPmts(G)+cardMins(G))/g:(loanPmts(G)>0?1:0)}
+function paycheck(G){
+  const C=CITIES[G.city];let wage=0;
+  if(G.unemp)return{wage:0,k:0,match:0,fed:0,fica:0,st:0,net:0,unemp:Math.min(G.prevSalary*.45/12,1600)};
+  if(G.job&&G.job!=="biz")wage=G.salary/12;
+  const k=canK(G)?wage*G.k401pct:0,match=canK(G)?wage*Math.min(G.k401pct,.04):0;
+  const annual=(wage-k)*12,fed=fedTax(annual)/12*1.02,fica=wage*.0765,st=Math.max(0,annual)*C.stateTax/12;
+  return{wage,k,match,fed,fica,st,net:wage-k-fed-fica-st,unemp:0}}
+function loanRate(G,base){const s=G.score;let adj=s==null?3.5:s>=760?0:s>=700?.6:s>=660?1.4:s>=620?2.8:4.5;return+(G.fed+base+adj-(G.lessons.debt?.5:0)).toFixed(2)}
+function snap(G){return{m:G.m,nw:netWorth(G),a:assetsTotal(G),d:debtsTotal(G),inv:holdVal(G)+G.k401,sc:G.score,wb:G.wb}}
+
+/* ---------- credit score ---------- */
+function calcScore(G){
+  const accts=G.cards.map(c=>c.opened).concat(G.loans.map(l=>l.opened));
+  const thin=!accts.length&&!G.lates.length&&!G.coll;
+  let ph=100;for(const x of G.lates){const a=G.m-x;if(a<12)ph-=28;else if(a<36)ph-=12;else if(a<84)ph-=4}if(G.coll>0)ph-=40;ph=clamp(ph,0,100);
+  const lim=cardLimit(G),ut=lim?cardBal(G)/lim:null;
+  const u=ut==null?55:ut<=.09?100:ut<=.3?85:ut<=.5?60:ut<=.75?35:15;
+  const avgAge=accts.length?accts.reduce((t,o)=>t+(G.m-o),0)/accts.length:0;
+  const age=clamp(avgAge/84*100,0,100);
+  const types=(G.cards.length?1:0)+(G.loans.length?1:0);const mix=[15,55,100][types];
+  const inq=G.inq.filter(x=>G.m-x<12).length;const nc=[100,80,60,35][Math.min(3,inq)];
+  const raw=(.35*ph+.30*u+.15*age+.10*mix+.10*nc)/100;
+  G.sf={ph,u,ut,age,avgAge,mix,types,nc,inq,thin};
+  G.score=thin?null:Math.round(300+550*raw);return G.score}
+
+/* ---------- money movement ---------- */
+function chargeCard(G,amt){
+  let left=amt,charged=0;
+  const cs=[...G.cards].sort((a,b)=>b.rew-a.rew);
+  for(const c of cs){const av=Math.max(0,c.limit-c.bal);const x=Math.min(av,left);if(x<=0)continue;c.bal+=x;left-=x;charged+=x;const rw=x*c.rew;G.cash+=rw;G.stats.rewards+=rw;if(left<=0)break}
+  return charged}
+function spend(G,amt,how){
+  if(how==="card"){const c=chargeCard(G,amt),rest=amt-c;G.cash-=rest;return rest>0.5?`Only ${fm(c)} fit on your cards, so ${fm(rest)} came out of checking.`:`Charged ${fm(amt)} to your credit card.`}
+  if(how==="save"){const s=Math.min(G.hysa,amt);G.hysa-=s;G.cash-=amt-s;return`Covered ${fm(amt)} from your emergency savings.`}
+  G.cash-=amt;return`Paid ${fm(amt)} from checking.`}
+function buy(G,s,usd){if(usd<=0||usd>G.cash+1e-6)return false;const p=price(G,s);const h=G.hold[s]||(G.hold[s]={sh:0,cost:0});h.sh+=usd/p;h.cost+=usd;G.cash-=usd;return true}
+function sell(G,s,usd){const h=G.hold[s];if(!h||h.sh<=0)return 0;const p=price(G,s);let sh=Math.min(h.sh,usd/p);if(h.sh-sh<1e-6)sh=h.sh;const proceeds=sh*p,basis=h.cost*(sh/h.sh);G.ytd.gains+=proceeds-basis;h.sh-=sh;h.cost-=basis;if(h.sh<1e-7)delete G.hold[s];G.cash+=proceeds;return proceeds}
+function applyCard(G,id){
+  const C=CARDS.find(c=>c.id===id);if(G.cards.some(c=>c.pid===id))return{ok:false,msg:"You already have this card."};
+  if(C.dep){if(G.cash<C.dep)return{ok:false,msg:`You need ${fm(C.dep)} in checking for the deposit.`};G.cash-=C.dep;G.deposit+=C.dep}
+  else G.inq.push(G.m);
+  const p=approvalOdds(G,C);
+  if(R()>p){calcScore(G);return{ok:false,msg:`Application for ${C.n} was declined. The hard inquiry still dings your score a little.`}}
+  G.cards.push({id:"C"+(G.uid++),pid:C.id,n:C.n,limit:C.limit,apr:C.apr,rew:C.rew,bal:0,opened:G.m,paid:0,lastInt:0,promo:0,c1:C.c1,c2:C.c2,dep:C.dep||0});
+  calcScore(G);return{ok:true,msg:`Approved! ${C.n} opened with a ${fm(C.limit)} limit.`}}
+function approvalOdds(G,C){if(C.dep)return 1;const s=G.score;if(s==null)return C.thin?.7:.05;if(s>=C.min+30)return .95;if(s>=C.min)return .75;if(s>=C.min-30)return .3;return .05}
+function payCard(G,id,amt){const c=G.cards.find(c=>c.id===id);if(!c)return 0;amt=Math.min(amt,c.bal,Math.max(0,G.cash));if(amt<=0)return 0;G.cash-=amt;c.bal-=amt;c.paid+=amt;return amt}
+function closeCard(G,id){const i=G.cards.findIndex(c=>c.id===id);const c=G.cards[i];if(!c||c.bal>0.01)return false;if(c.dep){G.deposit-=c.dep;G.cash+=c.dep}G.cards.splice(i,1);calcScore(G);return true}
+function payLoan(G,id,amt){const l=G.loans.find(l=>l.id===id);if(!l)return 0;amt=Math.min(amt,l.bal,Math.max(0,G.cash));if(amt<=0)return 0;G.cash-=amt;l.bal-=amt;if(l.bal<.5){G.loans=G.loans.filter(x=>x!==l);log(G,`Paid off ${l.n}!`,"g")}else if(!l.defer){const left=Math.max(1,l.term-(G.m-l.opened));l.pmt=Math.min(l.pmt,amort(l.bal,l.rate,left))}return amt}
+function applyJob(G,id){
+  const J=JOBS[id];
+  if(G.schoolLeft>0)return{ok:false,msg:"Finish school first."};
+  if(J.edu!=="hs"&&G.edu!==J.edu)return{ok:false,msg:`Requires: ${EDU[J.edu]}.`};
+  if(J.cert&&!G.courses[J.cert])return{ok:false,msg:"Requires the Bookkeeping certificate."};
+  if((G.cool[id]||0)>G.m)return{ok:false,msg:"They asked you to reapply in a couple of months."};
+  if(G.job==="biz")return{ok:false,msg:"Sell or close your business first."};
+  const p=clamp(.55+(G.skill-J.sk)*.12+(G.lessons.neg?.1:0)+(G.regime==="rec"?-.15:0),.08,.95);
+  if(R()<p){const ns=J.s*wm(G)*(G.lessons.neg?1.04:1),old=G.job?G.salary:0;
+    if(ns>old+500)G.stats.promos++;
+    G.job=id;G.salary=Math.max(ns,G.unemp?0:0);G.unemp=0;return{ok:true,msg:`You're hired as ${J.t} at ${fm(G.salary)}/yr!`}}
+  G.cool[id]=G.m+2;return{ok:false,msg:`The ${J.t} role went to another candidate. You can reapply in 2 months.`}}
+function jobOdds(G,id){const J=JOBS[id];return clamp(.55+(G.skill-J.sk)*.12+(G.lessons.neg?.1:0)+(G.regime==="rec"?-.15:0),.08,.95)}
+
+/* ---------- market ---------- */
+function stepMarket(G,init){
+  const vm=[.8,1,1.3][G.diff];
+  if(!init){const t=TRANS[G.regime];let r=R(),acc=0,next=G.regime;for(const k in t){acc+=t[k];if(r<acc){next=k;break}}
+    if(G.diff===2&&next==="bull"&&R()<.25)next="normal";
+    if(next!==G.regime){G.regime=next;news(G,MACRO[next],"macro")}}
+  const rg=REG[G.regime],pf=G.fed;
+  G.fed=clamp(G.fed+(rg.fedT-G.fed)*.08+gauss()*.04,.25,7);const dF=G.fed-pf;
+  G.inflR=clamp(G.inflR+(rg.infT-G.inflR)*.1+gauss()*.001,-.01,.09);if(!init)G.infl*=1+G.inflR/12;
+  const mkt=rg.mu+rg.sd*gauss()*vm;let shock=null;
+  if(!init&&R()<.38){const secs=Object.keys(NEWS),sec=secs[Math.floor(R()*secs.length)],arr=NEWS[sec],[t,v]=arr[Math.floor(R()*arr.length)];shock={sec,v};
+    const sym=ASSETS.find(a=>a.sec===sec).s;news(G,t,v>0?"up":"down",sym)}
+  for(const a of ASSETS){let r=a.beta*mkt+a.idio*gauss()*vm+a.alpha;if(a.rate)r-=dF*.045;
+    if(a.sec==="Crypto"&&R()<.05)r+=R()<.5?-.33:.45;if(shock&&shock.sec===a.sec)r+=shock.v;r=Math.max(r,-.6);
+    const arr=G.px[a.s];arr.push(+Math.max(.2,arr[arr.length-1]*(1+r)).toFixed(4));G.lastRet[a.s]=r}
+  G.mkt=mkt;
+  if(!init){const hr=.0028+({bull:.002,normal:0,bear:-.004,rec:-.006}[G.regime])+gauss()*.004;G.homeIdx*=1+hr;if(G.home)G.home.val*=1+hr}}
+
+/* ---------- monthly tick ---------- */
+function advanceMonth(G){
+  if(G.over)return;
+  const C=CITIES[G.city],b=G.budget,mo=G.m%12,vm=[.8,1,1.3][G.diff];
+  const f={gross:0,k401:0,match:0,tax:0,net:0,side:0,biz:0,unemp:0,exp:0,debt:0,card:0,cardPay:0,saved:0,invested:0,interest:0,div:0,items:null};
+  if(mo===0&&G.m>0){G.lastYear={...G.ytd,year:2027+Math.floor(G.m/12)-1};G.ytd={wage:0,k401:0,other:0,gains:0,ord:0,withheld:0}}
+  // income
+  const pk=paycheck(G);
+  f.gross=pk.wage;f.k401=pk.k;f.match=pk.match;f.tax=pk.fed+pk.fica+pk.st;f.net=pk.net;f.unemp=pk.unemp;
+  G.k401+=pk.k+pk.match;G.ytd.wage+=pk.wage;G.ytd.k401+=pk.k;G.ytd.withheld+=f.tax;G.ytd.ord+=pk.unemp;
+  if(G.job==="biz"&&!G.unemp){const z=G.biz,adj={bull:.01,normal:0,bear:-.015,rec:-.03}[G.regime];
+    const g=.013+z.re*.09+adj+gauss()*.08*vm+(G.lessons.ent?.008:0);z.rev=clamp(z.rev*(1+g),300,32000);
+    f.biz=z.rev-z.rev*.42-z.rev*z.re;z.profit=f.biz;z.hist.push(z.rev);if(z.hist.length>120)z.hist.shift();G.ytd.other+=f.biz}
+  if(G.side>0){f.side=G.side*4.33*sideRate(G);G.ytd.other+=f.side}
+  G.cash+=f.net+f.side+f.biz+f.unemp;
+  const take=Math.max(0,f.net+f.side+Math.max(0,f.biz)+f.unemp);
+  // pay yourself first
+  const sv=take*b.autoSave/100;if(sv>0&&G.cash>=sv){G.cash-=sv;G.hysa+=sv;f.saved=sv}
+  const iv=take*b.autoInvest/100;if(iv>0&&G.cash>=iv){buy(G,b.autoSym,iv);f.invested=iv}
+  // expenses
+  const B=budgetItems(G);f.items=B.items.map(i=>({l:i.l,a:i.a,cat:i.cat}));f.exp=B.total;
+  const cardable=B.items.filter(i=>i.card).reduce((t,i)=>t+i.a,0)*G.cardPct/100;
+  const ch=cardable>0&&G.cards.length?chargeCard(G,cardable):0;f.card=ch;G.cash-=B.total-ch;
+  // loans
+  for(const L of G.loans){const r=L.rate/1200,int=L.bal*r;if(L.defer){L.bal+=int;continue}
+    const p=Math.min(L.pmt,L.bal+int);G.cash-=p;L.bal=L.bal+int-p;G.stats.intPaid+=int;f.debt+=p}
+  const paidOff=G.loans.filter(L=>L.bal<.5);for(const L of paidOff)log(G,`${L.n} is fully paid off.`,"g");
+  G.loans=G.loans.filter(L=>L.bal>=.5);
+  // cards
+  for(const c of G.cards){const S0=c.bal+c.paid;if(S0<=.005){c.paid=0;c.lastInt=0;continue}
+    const min=Math.min(S0,Math.max(25,S0*.02+c.lastInt));let pay=0;
+    if(G.autopay==="full")pay=Math.min(c.bal,Math.max(0,G.cash));else if(G.autopay==="min")pay=Math.min(c.bal,Math.max(0,min-c.paid),Math.max(0,G.cash));
+    G.cash-=pay;c.bal-=pay;f.cardPay+=pay+c.paid;
+    if(c.paid+pay+.01<min){G.lates.push(G.m);G.stats.lateCount++;c.bal+=35;c.apr=Math.max(c.apr,29.9);log(G,`Missed the minimum payment on ${c.n}: $35 late fee and penalty APR.`,"l")}
+    let int=0;if(c.bal>.005){if(c.promo>0)c.promo--;else{int=c.bal*c.apr/1200;c.bal+=int}}
+    c.lastInt=int;G.stats.intPaid+=int;c.paid=0}
+  // collections: interest, then the agency collects what it can
+  if(G.coll>0){const int=G.coll*.24/12;G.coll+=int;G.stats.intPaid+=int;
+    if(G.cash>0){const x=Math.min(G.coll,G.cash*.5);G.cash-=x;G.coll-=x;if(G.coll<.5)G.coll=0;f.debt+=x}}
+  // savings & CD
+  const hi=G.hysa*hysaRate(G)/12;G.hysa+=hi;f.interest=hi;G.ytd.ord+=hi;
+  if(G.cd){const ci=G.cd.amt*G.cd.rate/1200;G.cd.amt+=ci;G.ytd.ord+=ci;f.interest+=ci;if(G.m+1>=G.cd.mat){G.hysa+=G.cd.amt;log(G,`Your CD matured: ${fm(G.cd.amt)} moved to savings.`,"g");G.cd=null}}
+  // markets
+  stepMarket(G);
+  G.k401*=1+G.lastRet.VTX+.014/12;
+  if(mo%3===2){for(const[s,h]of Object.entries(G.hold)){const a=AS[s];if(!a.div)continue;const d=h.sh*price(G,s)*a.div/4;f.div+=d;G.ytd.ord+=d;if(b.drip){h.sh+=d/price(G,s);h.cost+=d}else G.cash+=d}
+    if(f.div>0)log(G,`Received ${fm(f.div,2)} in dividends${b.drip?" (reinvested)":""}.`,"g")}
+  if(G.car)G.car.val*=.988;
+  // overdraft
+  if(G.cash<0){const need=-G.cash,fs=Math.min(need,G.hysa);if(fs>0){G.hysa-=fs;G.cash+=fs-10;log(G,`Overdraft protection pulled ${fm(fs)} from savings ($10 fee).`,"l")}
+    if(G.cash<0){G.coll+=-G.cash;log(G,`You couldn't cover ${fm(-G.cash)} in bills. It went to collections at 24% APR.`,"l");G.cash=0;G.lates.push(G.m);G.stats.lateCount++}}
+  // career & school
+  if(G.unemp>0){G.unemp--;if(G.unemp===0){G.job=G.prevJob;G.salary=G.prevSalary*.97;news(G,`You landed a new role as ${JOBS[G.job].t}.`,"good");log(G,"Back to work after your job search.","g")}}
+  if(G.schoolLeft>0){G.skill=Math.min(10,G.skill+.1);G.schoolLeft--;if(G.schoolLeft===0)graduate(G)}
+  else if(G.job&&!G.unemp)G.skill=Math.min(10,G.skill+.055);
+  if(G.evening){G.evening.left--;G.skill=Math.min(10,G.skill+.05);if(G.evening.left<=0){G.evening=null;G.edu="degree";G.stats.grad=true;for(const l of G.loans)if(l.type==="student"&&l.defer){l.defer=false;l.pmt=amort(l.bal,l.rate,l.term)}G.pending.push({id:"grad2"})}}
+  if(mo===11&&regularJob(G)){let r=(1.5+G.skill*.35+(G.wb>60?1:0)+(G.lessons.neg?1.5:0)+(R()*2.6-1)+(G.regime==="rec"?-1.5:0))/100;r=Math.max(0,r);G.salary*=1+r;news(G,`Annual review: ${r>0?pc(r)+" raise":"no raise this year"}. New salary ${fm(G.salary)}.`,r>.035?"good":"info");log(G,`Annual review: ${pc(r)} raise.`,r>0?"g":"")}
+  // wellbeing
+  const t=wbTarget(G);G.wb=clamp(G.wb+(t-G.wb)*.22,0,100);G.stats.wbSum+=G.wb;
+  if(G.wb<18&&!G.pending.some(p=>p.id==="burnout"))G.pending.push({id:"burnout"});
+  // taxes
+  if(mo===3&&G.lastYear){G.pending.push({id:"taxes",d:taxSettle(G)});G.lastYear=null}
+  // events
+  const evc=[.36,.5,.62][G.diff];if(R()<evc)pickEvent(G);
+  G.flow=f;G.m++;calcScore(G);
+  if(debtsTotal(G)>1)G.stats.hadDebt=true;
+  const nw=netWorth(G);G.stats.peak=Math.max(G.stats.peak,nw);G.hist.push(snap(G));
+  checkAch(G);
+  if(G.m>=G.years*12)G.over=true}
+function graduate(G){const P=PATHS[G.path];G.edu=P.eduAfter;G.job=P.job;G.salary=JOBS[P.job].s*wm(G);G.stats.grad=true;
+  for(const l of G.loans)if(l.type==="student"&&l.defer){l.defer=false;l.pmt=amort(l.bal,l.rate,l.term);l.opened=Math.min(l.opened,G.m)}
+  G.pending.push({id:"grad"});news(G,`You graduated! You start as ${JOBS[P.job].t} at ${fm(G.salary)}/yr.`,"good")}
+function wbTarget(G){const b=G.budget,C=CITIES[G.city];let t=52;
+  t+=G.home?10:[-7,0,5,8][b.housing];t+=[-4,0,4][b.groceries];
+  t+=clamp(((b.fun+b.dining*.6)/(G.infl*C.col)-180)/25,-12,14);
+  if(G.car)t+=4;if(G.pet)t+=6;if(b.giving>0)t+=3;t-=G.side*.7;if(G.evening)t-=6;if(G.unemp)t-=10;
+  if(cardBal(G)>2500)t-=6;if(G.coll>0)t-=10;const ef=efMonths(G);t+=ef>=3?5:ef<1?-6:0;if(G.job==="biz")t-=3;
+  return clamp(t,5,98)}
+function taxSettle(G){const y=G.lastYear,C=CITIES[G.city];
+  const other=Math.max(0,y.other),se=other*.9235*.153,ordinary=y.wage-y.k401+other-se/2+y.ord;
+  let fed=fedTax(ordinary)+Math.max(0,y.gains)*.15;const saved=G.lessons.tax?fed*.08:0;fed-=saved;
+  const fica=y.wage*.0765,st=Math.max(0,ordinary+Math.max(0,y.gains))*C.stateTax,total=fed+fica+st+se;
+  return{year:y.year,wage:y.wage,k401:y.k401,other,ord:y.ord,gains:y.gains,fed,fica,st,se,saved,total,withheld:y.withheld,due:total-y.withheld,eff:total/Math.max(1,y.wage+other+y.ord+Math.max(0,y.gains))}}
+
+/* ---------- events ---------- */
+function payChoices(G,amt,opts={}){const o=[{t:"Pay from checking",sub:fm(amt),fx:G=>spend(G,amt,"cash")}];
+  if(G.hysa>=amt*.5)o.push({t:"Use emergency savings",sub:`Savings ${fm(G.hysa)}`,fx:G=>spend(G,amt,"save")});
+  if(cardAvail(G)>0)o.push({t:"Put it on a credit card",sub:`${maxApr(G)}% APR if unpaid`,fx:G=>spend(G,amt,"card")});
+  if(opts.plan!=null)o.push({t:"Set up a payment plan",sub:`12 months, ${opts.plan}% APR`,fx:G=>{addLoan(G,{n:opts.planName||"Payment plan",type:"plan",bal:amt,rate:opts.plan,term:12});return`A 12-month plan of ${fm(amort(amt,opts.plan,12))}/mo was added to your debts.`}});
+  return o}
+const EVENTS=[
+ {id:"car_repair",ic:"🔧",tag:"Emergency Fund",w:1.1,cond:G=>!!G.car,gen:()=>({a:Math.round(600+R()*1300)}),title:"Your car breaks down",
+  body:(G,d)=>`The mechanic says the transmission needs work: <b>${fm(d.a)}</b>. Without it, you're back on the bus.`,
+  ch:(G,d)=>[...payChoices(G,d.a),{t:"Skip the repair",sub:"Car loses value, −wellbeing",fx:G=>{G.car.val*=.65;G.wb-=8;return"You park the car and take transit for a while. The car is now worth a lot less."}}],
+  lesson:"Car repairs are the most common surprise expense. A funded emergency account turns a crisis into an inconvenience."},
+ {id:"medical",ic:"🩺",tag:"Insurance",w:.9,gen:G=>({a:G.budget.health?350:4200}),title:"A trip to urgent care",
+  body:(G,d)=>`You sprained your wrist playing pickup basketball. ${G.budget.health?"Your health plan covers most of it. You owe the deductible:":"<b>You have no health insurance.</b> The full bill is:"} <b>${fm(d.a)}</b>.`,
+  ch:(G,d)=>payChoices(G,d.a,{plan:0,planName:"Hospital payment plan"}),
+  lesson:"Insurance trades a small, predictable premium for protection from a large, unpredictable loss. Hospitals often offer 0% payment plans if you ask."},
+ {id:"theft",ic:"💻",tag:"Insurance",w:.5,cond:G=>!G.home,gen:()=>({a:1400}),title:"Break-in at your apartment",
+  body:(G,d)=>`Someone stole your laptop and TV (${fm(d.a)} total). ${G.budget.renters?"You have renters insurance with a $250 deductible.":"You don't have renters insurance."}`,
+  ch:(G,d)=>G.budget.renters?[{t:"File a claim",sub:"Pay $250 deductible",fx:G=>{G.cash-=250;return"Your insurer covered the rest. Renters insurance just paid for itself for years."}}]:[...payChoices(G,d.a),{t:"Go without for now",sub:"−wellbeing, slower skills",fx:G=>{G.wb-=10;G.skill=Math.max(0,G.skill-.4);return"You make do with your phone. It's frustrating."}}],
+  lesson:"Renters insurance usually costs about $15–20 a month and covers your belongings, not the building."},
+ {id:"trip",ic:"🏖️",tag:"Opportunity Cost",w:1,gen:G=>({a:Math.round(560*CITIES[G.city].col)}),title:"Your friends plan a beach trip",
+  body:(G,d)=>`Everyone's going for a long weekend. Your share is <b>${fm(d.a)}</b>.`,
+  ch:(G,d)=>[{t:"Go, paying cash",sub:fm(d.a)+", +wellbeing",fx:G=>{G.cash-=d.a;G.wb+=12;return"Sun, sand and memories. Worth it."}},
+    ...(cardAvail(G)>0?[{t:"Go, on credit",sub:"+wellbeing, adds card debt",fx:G=>{const r=spend(G,d.a,"card");G.wb+=12;return r+" Remember, you'll pay interest if you carry it."}}]:[]),
+    {t:"Skip it and save",sub:"−wellbeing",fx:G=>{G.wb-=5;return`You stay home. That ${fm(d.a)} stays put.`}}],
+  lesson:"Opportunity cost is what you give up when you choose. Fun is a valid budget category, as long as it fits the plan."},
+ {id:"phone",ic:"📱",tag:"Needs vs. Wants",w:.8,gen:()=>({a:1199}),title:"The new phone just dropped",
+  body:()=>`It's beautiful. It's $1,199. Your current phone works fine.`,
+  ch:(G,d)=>[{t:"Buy it outright",sub:fm(d.a),fx:G=>{G.cash-=d.a;G.wb+=6;return"Shiny. Your wallet feels lighter."}},{t:"24-month financing",sub:"$55/mo at 9.9% APR",fx:G=>{addLoan(G,{n:"Phone financing",type:"plan",bal:d.a,rate:9.9,term:24});G.wb+=6;return"New phone today, payments for two years."}},{t:"Keep your current phone",sub:"$0",fx:()=>"Good call. A working phone is a solved problem."}],
+  lesson:"Financing makes wants feel affordable by hiding the total cost. Always compare the full price, including interest."},
+ {id:"scam_text",ic:"📩",tag:"Fraud Prevention",w:.9,scam:1,title:"\"You've won a $5,000 prize!\"",
+  body:()=>`A text says you won a sweepstakes. To release the money, just pay a <b>$250 processing fee</b> with gift cards in the next hour.`,
+  ch:()=>[{t:"Pay the fee",sub:"$250",fx:G=>{G.cash-=250;return"The number goes silent. It was a scam, and the $250 is gone."}},{t:"Ignore and report it",sub:"Forward to 7726 (SPAM)",fx:G=>{G.stats.scamsAvoided++;return"Correct. Real prizes never require upfront fees, especially in gift cards."}}],
+  lesson:"Red flags: urgency, upfront fees, gift-card payments, and prizes you never entered to win."},
+ {id:"phish",ic:"🎣",tag:"Fraud Prevention",w:.7,scam:1,title:"\"Your bank account is locked\"",
+  body:()=>`An email that looks just like your bank says suspicious activity was found. "Click here and sign in within 24 hours to avoid closure."`,
+  ch:()=>[{t:"Click the link and log in",sub:"Looks legit…",fx:G=>{const l=Math.round(G.cash*.4);G.cash-=l;G.wb-=6;return`It was a fake site. Thieves drained ${fm(l)} before your bank froze the account.`}},{t:"Call the number on your card",sub:"Verify independently",fx:G=>{G.stats.scamsAvoided++;return"The bank confirms your account is fine. That email was a phishing attempt."}}],
+  lesson:"Never sign in through a link in an unexpected message. Contact the company using a number or app you already trust."},
+ {id:"idtheft",ic:"🕵️",tag:"Consumer Protection",w:.45,cond:G=>G.cards.length>0,title:"Strange charges on your card",
+  body:()=>`You spot $870 of purchases from an electronics store three states away.`,
+  ch:()=>[{t:"Report it to the card issuer now",sub:"Dispute the charges",fx:()=>"The charges are reversed under federal fraud protection, and a new card is on the way."},{t:"Ignore it, maybe it'll fix itself",sub:"",fx:G=>{G.cards[0].bal+=870;return"Months later it's too late to dispute. You're stuck with $870."}}],
+  lesson:"Report card fraud quickly. Federal law caps your liability for credit card fraud, but only if you act."},
+ {id:"offer",ic:"💼",tag:"Career Growth",w:.7,cond:G=>regularJob(G),gen:()=>({p:.12+R()*.08}),title:"A recruiter reaches out",
+  body:(G,d)=>`A competitor offers <b>${fm(G.salary*(1+d.p))}</b> (+${pc(d.p,0)}) for a similar role.`,
+  ch:(G,d)=>[{t:"Accept the offer",sub:`+${pc(d.p,0)} salary`,fx:G=>{G.salary*=1+d.p;G.stats.promos++;G.wb-=2;return`You start in two weeks at ${fm(G.salary)}. Change is stressful, but your pay just jumped.`}},
+    {t:"Use it to negotiate",sub:`${G.lessons.neg?"75%":"45%"} chance`,fx:G=>{if(R()<(G.lessons.neg?.75:.45)){G.salary*=1+d.p*.7;return`Your manager counters with a raise to ${fm(G.salary)}. You stay.`}return"Your manager can't match it, and the other offer expires. Nothing changes."}},
+    {t:"Decline politely",sub:"",fx:()=>"You stay put. Loyalty has value too."}],
+  lesson:"Changing employers is often the fastest way to raise your pay. Negotiate on total compensation, not just salary."},
+ {id:"layoff",ic:"📦",tag:"Emergency Fund",w:G=>({rec:1.4,bear:.55}[G.regime]||.12),cond:G=>regularJob(G)&&G.m>6,gen:()=>({n:2+Math.floor(R()*3)}),title:"Your position was eliminated",
+  body:(G,d)=>`Budget cuts hit your team. You'll receive unemployment benefits (about ${fm(Math.min(G.salary*.45/12,1600))}/mo) while you search, which may take around ${d.n} months.`,
+  ch:(G,d)=>[{t:"Search for a comparable job",sub:`~${d.n} months on benefits`,fx:G=>{G.prevJob=G.job;G.prevSalary=G.salary;G.unemp=d.n;G.job=null;G.wb-=8;return"You file for unemployment and start applying. Now's when an emergency fund matters most."}},
+    {t:"Take a retail job right away",sub:fm(JOBS.retail1.s*wm(G))+"/yr",fx:G=>{G.job="retail1";G.salary=JOBS.retail1.s*wm(G);G.wb-=5;return"Steady income, lower pay. You can keep applying for better roles from the Career tab."}}],
+  lesson:"Layoffs often come during recessions, exactly when markets are also down. That's why emergency funds sit in cash, not stocks."},
+ {id:"bonus",ic:"🎁",tag:"Saving & Investing",w:.7,cond:G=>regularJob(G),gen:G=>({a:Math.round(G.salary*(.02+R()*.03))}),title:"Surprise bonus!",
+  body:(G,d)=>`Great quarter. Your company pays you a <b>${fm(d.a)}</b> bonus (after taxes).`,
+  ch:(G,d)=>[{t:"Add to savings",sub:"Emergency fund",fx:G=>{G.hysa+=d.a;return"Your safety net just got thicker."}},{t:"Invest in the index fund",sub:"VTX",fx:G=>{G.cash+=d.a;buy(G,"VTX",d.a);return`Bought ${fm(d.a)} of VTX.`}},
+    ...(debtsTotal(G)>100?[{t:"Pay down debt",sub:"Highest rate first",fx:G=>{let left=d.a;G.cash+=d.a;const cs=[...G.cards].sort((a,b)=>b.apr-a.apr);for(const c of cs)left-=payCard(G,c.id,left);if(G.coll>0){const x=Math.min(G.coll,left);G.coll-=x;G.cash-=x;left-=x}const ls=[...G.loans].sort((a,b)=>b.rate-a.rate);for(const l of ls)left-=payLoan(G,l.id,left);return"You knocked down your highest-interest debt first: the avalanche method."}}]:[]),
+    {t:"Treat yourself",sub:"+wellbeing",fx:G=>{G.cash+=d.a;G.wb+=10;return"You enjoy it. Money is for living, too."}}],
+  lesson:"Windfalls are a chance to make progress. Many people split them: some for fun, the rest toward goals."},
+ {id:"wedding",ic:"💍",tag:"Budgeting",w:.5,gen:G=>({a:Math.round(480*CITIES[G.city].col)}),title:"Your cousin is getting married",
+  body:(G,d)=>`Travel, a gift and an outfit will run about <b>${fm(d.a)}</b>.`,
+  ch:(G,d)=>[...payChoices(G,d.a),{t:"Send a gift and regrets",sub:"$75, −wellbeing",fx:G=>{G.cash-=75;G.wb-=4;return"You send a thoughtful gift and watch the livestream."}}],
+  lesson:"Irregular expenses like weddings and holidays are predictable in total. Set aside a little every month in a sinking fund."},
+ {id:"pet",ic:"🐶",tag:"Long-Term Costs",w:.4,cond:G=>!G.pet,title:"A shelter puppy needs a home",
+  body:()=>`Adoption is $150. Food, vet visits and supplies run about $85 a month after that.`,
+  ch:()=>[{t:"Adopt her",sub:"$150 + $85/mo, +wellbeing",fx:G=>{G.cash-=150;G.pet=true;G.wb+=8;return"Meet Biscuit. Your budget now includes pet care."}},{t:"Not right now",sub:"",fx:()=>"You'll revisit when your budget has room."}],
+  lesson:"Many purchases have ongoing costs. Look at total cost of ownership, not just the sticker price."},
+ {id:"family",ic:"🤝",tag:"Personal Values",w:.45,gen:()=>({a:800}),title:"A family member asks for help",
+  body:(G,d)=>`Your uncle is behind on rent and asks to borrow <b>${fm(d.a)}</b>. He promises to pay you back.`,
+  ch:(G,d)=>[{t:"Lend the money",sub:fm(d.a),fx:G=>{G.cash-=d.a;if(R()<.5){G.pending.push({id:"repay",d:{a:d.a}});return"He's grateful. You hope to see it again."}G.wb+=3;return"He's grateful, though you suspect it's more of a gift."}},{t:"Offer to help him make a budget",sub:"Time, not money",fx:G=>{G.wb+=1;return"You spend an evening together working through his finances."}},{t:"Say no",sub:"−wellbeing",fx:G=>{G.wb-=4;return"It's a hard conversation."}}],
+  lesson:"Only lend money you can afford to lose. Helping with skills can matter as much as helping with cash."},
+ {id:"repay",ic:"💌",tag:"Personal Values",w:0,title:"Your uncle paid you back",body:(G,d)=>`He returned the full ${fm(d.a)}, with a thank-you card.`,ch:(G,d)=>[{t:"Nice!",sub:"",fx:G=>{G.cash+=d.a;G.wb+=3;return"Trust rewarded."}}],lesson:"Clear expectations make family loans much more likely to be repaid."},
+ {id:"crash",ic:"📉",tag:"Investor Psychology",w:1.2,cond:G=>holdVal(G)>800&&(G.regime==="bear"||G.regime==="rec"),title:"Your portfolio is in the red",
+  body:G=>`Headlines are screaming. Your investments are worth ${fm(holdVal(G))} and falling. A coworker just sold everything.`,
+  ch:G=>[{t:"Sell everything to stop the pain",sub:"Lock in losses",fx:G=>{let t=0;for(const s of Object.keys(G.hold))t+=sell(G,s,1e12);G.wb+=2;return`You sold ${fm(t)}. If markets recover, you won't be in for the rebound.`}},{t:"Hold and stay the course",sub:"",fx:()=>"You turn off the news. Historically, staying invested has beaten trying to time the market."},
+    {t:"Buy more while prices are low",sub:`Invest ${fm(Math.min(500,Math.max(0,G.cash)))}`,fx:G=>{const a=Math.min(500,Math.max(0,G.cash));buy(G,"VTX",a);return`You bought ${fm(a)} of VTX at a discount.`}}],
+  lesson:"Selling in a panic turns temporary losses into permanent ones. Dollar-cost averaging buys more shares when prices are low."},
+ {id:"hype",ic:"🚀",tag:"Risk & Return",w:.5,title:"\"Bytecoin is going to 10×\"",
+  body:()=>`Your friend swears Bytecoin is about to explode and wants you to put in $1,000 before it's "too late."`,
+  ch:G=>[{t:"Invest $1,000 in Bytecoin",sub:"High risk",fx:G=>{if(G.cash<1000)return"You don't have $1,000 in checking. Probably for the best.";buy(G,"BYTE",1000);return"You're now a crypto investor. Hold on tight."}},{t:"Invest $100 you can afford to lose",sub:"",fx:G=>{buy(G,"BYTE",Math.min(100,Math.max(0,G.cash)));return"A small speculative position: fun without risking your goals."}},{t:"Pass",sub:"",fx:()=>"FOMO is a feeling, not a strategy."}],
+  lesson:"Never invest money you need in something you don't understand. Limit speculation to a small slice of your portfolio."},
+ {id:"storecard",ic:"🛍️",tag:"Credit",w:.6,cond:G=>G.cards.length<3&&G.m>2,title:"\"Save 20% today with our store card!\"",
+  body:()=>`At checkout, Cartwheel offers 20% off your $200 purchase if you open their store card. It's 0% APR for 6 months, then 29.9%.`,
+  ch:()=>[{t:"Open the card",sub:"Hard inquiry, save $40",fx:G=>{G.inq.push(G.m);if(G.score!=null&&G.score<580)return"Declined, and the inquiry still counts.";G.cards.push({id:"C"+(G.uid++),pid:"store",n:"Cartwheel Store Card",limit:1200,apr:29.9,rew:0,bal:0,opened:G.m,paid:0,lastInt:0,promo:6,c1:"#b0413e",c2:"#5a1715"});G.cash+=40;return"You saved $40 and opened a new account. The 29.9% APR kicks in after 6 months."}},{t:"No thanks",sub:"",fx:()=>"You skip the pitch. Store cards often carry the highest interest rates."}],
+  lesson:"Each new application is a hard inquiry, and opening accounts lowers your average account age. Promotional rates end."},
+ {id:"inherit",ic:"📜",tag:"Windfalls",w:.18,gen:()=>({a:2500}),title:"A small inheritance",
+  body:(G,d)=>`Your great-aunt left you <b>${fm(d.a)}</b> with a note: "Do something smart with it."`,
+  ch:(G,d)=>[{t:"Invest it for the long term",sub:"VTX",fx:G=>{G.cash+=d.a;buy(G,"VTX",d.a);return"Invested. She'd be proud."}},{t:"Save it",sub:"",fx:G=>{G.hysa+=d.a;return"Into savings it goes."}},{t:"Spend it",sub:"+wellbeing",fx:G=>{G.cash+=d.a;G.wb+=8;return"You honor her memory with a great weekend."}}],
+  lesson:"Many advisors suggest a 'cooling-off' period before deciding what to do with a windfall."},
+ {id:"accident",ic:"💥",tag:"Insurance",w:.45,cond:G=>!!G.car,title:"Fender bender",
+  body:()=>`You rear-ended someone at a stoplight. Your auto insurance covers it after a <b>$500 deductible</b>, but your premium will rise.`,
+  ch:G=>payChoices(G,500),lesson:"A higher deductible lowers your premium but means more out-of-pocket when something happens. Match it to your emergency fund."},
+ {id:"dental",ic:"🦷",tag:"Budgeting",w:.5,gen:()=>({a:650}),title:"You need a root canal",
+  body:(G,d)=>`Dental work isn't covered by your health plan. The bill is <b>${fm(d.a)}</b>.`,ch:(G,d)=>payChoices(G,d.a,{plan:0,planName:"Dental payment plan"}),lesson:"Health, dental and vision coverage are often separate. Read what your plan actually covers."},
+ {id:"rent_hike",ic:"🏠",tag:"Negotiation",w:.5,cond:G=>!G.home&&G.budget.housing>0&&G.m>8,title:"Your lease is up for renewal",
+  body:()=>`The landlord wants to raise your rent 8%. Moving would cost about $900.`,
+  ch:G=>[{t:"Accept the increase",sub:"+8% rent",fx:G=>{G.rentMul=(G.rentMul||1)*1.08;return"You sign. Rent is now 8% higher."}},{t:"Negotiate",sub:G.lessons.neg?"Good odds":"Fair odds",fx:G=>{if(R()<(G.lessons.neg?.7:.4)){G.rentMul=(G.rentMul||1)*1.03;return"You point out your on-time history. They settle on 3%."}G.rentMul=(G.rentMul||1)*1.08;return"They won't budge. 8% it is."}},{t:"Move somewhere cheaper",sub:"$900 moving cost",fx:G=>{G.cash-=900;G.rentMul=1;G.budget.housing=Math.max(0,G.budget.housing-1);return`You move into a ${HOUSING[G.budget.housing].toLowerCase()} setup to save on rent.`}}],
+  lesson:"Landlords would often rather keep a reliable tenant than find a new one, so a polite negotiation can work."},
+ {id:"home_repair",ic:"🏚️",tag:"Homeownership",w:.7,cond:G=>!!G.home,gen:()=>({a:Math.round(3500+R()*6000)}),title:"The AC died in July",
+  body:(G,d)=>`Replacing the HVAC system costs <b>${fm(d.a)}</b>. Homeowners pay for their own repairs.`,ch:(G,d)=>payChoices(G,d.a,{plan:7.9,planName:"HVAC financing"}),lesson:"Budget 1–2% of a home's value each year for maintenance. Owning costs more than the mortgage."},
+ {id:"biz_contract",ic:"📋",tag:"Entrepreneurship",w:.8,cond:G=>G.job==="biz",title:"A fleet contract opportunity",
+  body:()=>`A local delivery company wants you to detail its 40 vans every month, but you'd need <b>$3,000</b> of new equipment first.`,
+  ch:G=>[{t:"Invest in the equipment",sub:"$3,000",fx:G=>{G.cash-=3000;G.biz.rev*=1.28;return"Contract signed. Revenue jumps about 28%."}},{t:"Finance the equipment",sub:"Loan at "+loanRate(G,4)+"%",fx:G=>{addLoan(G,{n:"Equipment loan",type:"business",bal:3000,rate:loanRate(G,4),term:36});G.biz.rev*=1.28;return"Financed and signed. Revenue up, but so is your debt."}},{t:"Pass",sub:"",fx:()=>"You stay small and safe."}],
+  lesson:"Reinvesting in capacity can grow a business, but the return has to beat the cost of the money."},
+ {id:"biz_review",ic:"⭐",tag:"Entrepreneurship",w:.6,cond:G=>G.job==="biz",title:"A one-star review goes viral",
+  body:()=>`An unhappy customer claims you scratched their car. It's getting shared around town.`,
+  ch:()=>[{t:"Respond publicly and offer a fix",sub:"$200 refund",fx:G=>{G.cash-=200;G.biz.rev*=.98;return"Your professional response earns praise. Damage contained."}},{t:"Ignore it",sub:"",fx:G=>{G.biz.rev*=.88;return"Bookings drop noticeably for a few weeks."}}],
+  lesson:"Reputation is a business asset. Handling complaints well can win more customers than it loses."},
+ {id:"freelance",ic:"🖥️",tag:"Income Streams",w:.6,cond:G=>G.side===0&&G.job!=="biz",gen:()=>({a:Math.round(500+R()*500)}),title:"A one-off freelance gig",
+  body:(G,d)=>`A friend's startup will pay <b>${fm(d.a)}</b> for a weekend project.`,ch:(G,d)=>[{t:"Take it",sub:"−wellbeing",fx:G=>{G.cash+=d.a;G.ytd.other+=d.a;G.wb-=4;return"Done. Remember: freelance income isn't taxed until April."}},{t:"Rest instead",sub:"",fx:G=>{G.wb+=2;return"A quiet weekend."}}],
+  lesson:"Self-employment income has no tax withheld. Set aside 25–30% for taxes."},
+ {id:"scholar",ic:"📝",tag:"Paying for School",w:.9,cond:G=>G.schoolLeft>6,title:"Scholarship deadline",
+  body:()=>`A $2,500 scholarship needs an essay by Friday.`,ch:()=>[{t:"Write the essay",sub:"55% chance, −wellbeing",fx:G=>{G.wb-=3;if(R()<.55){const l=G.loans.find(l=>l.type==="student");if(l)l.bal=Math.max(0,l.bal-2500);else G.cash+=2500;return"You won! $2,500 off your student loan."}return"Not this time, but the essay is reusable."}},{t:"Skip it",sub:"",fx:()=>"Free money left on the table."}],
+  lesson:"Scholarships and grants don't need to be repaid. Always exhaust free aid before borrowing."},
+ {id:"intern",ic:"🧑‍💻",tag:"Human Capital",w:.9,cond:G=>G.path==="college"&&G.schoolLeft>6&&G.schoolLeft<30,title:"Summer internship offer",
+  body:()=>`A firm offers a paid internship: $3,200 for the summer and real experience.`,ch:()=>[{t:"Accept",sub:"+$3,200, +1.5 skill",fx:G=>{G.cash+=3200;G.ytd.wage+=3200;G.skill+=1.5;return"Great experience, and a reference for later."}},{t:"Travel instead",sub:"−$900, +wellbeing",fx:G=>{G.cash-=900;G.wb+=12;return"An unforgettable summer."}}],
+  lesson:"Investing in your skills (human capital) is often the highest-return investment you'll ever make."},
+ {id:"audit",ic:"🧾",tag:"Taxes",w:.4,cond:G=>G.job==="biz"&&G.m>14,title:"The IRS has questions",
+  body:()=>`You've been selected for a review of your business expenses.`,ch:()=>[{t:"Send your records",sub:"",fx:G=>{if(G.lessons.tax||G.lessons.ent)return"Your organized receipts satisfy the auditor. No change.";G.cash-=900;return"Some expenses couldn't be documented. You owe $900 in back taxes and penalties."}}],
+  lesson:"Business owners must keep receipts and records. Good bookkeeping is protection."},
+];
+const SPECIAL={
+ taxes:{ic:"🧾",tag:"Taxes"},grad:{ic:"🎓",tag:"Education"},grad2:{ic:"🎓",tag:"Education"},burnout:{ic:"🫠",tag:"Wellbeing"}};
+const EVI=Object.fromEntries(EVENTS.map(e=>[e.id,e]));
+function evWeight(G,e){return typeof e.w==="function"?e.w(G):e.w}
+function pickEvent(G){
+  const pool=EVENTS.filter(e=>evWeight(G,e)>0&&(!e.cond||e.cond(G))&&G.m-(G.evLast[e.id]??-99)>=10);
+  const tot=pool.reduce((t,e)=>t+evWeight(G,e),0);if(!tot)return;let r=R()*tot;
+  for(const e of pool){r-=evWeight(G,e);if(r<=0){G.evLast[e.id]=G.m;G.pending.push({id:e.id,d:e.gen?e.gen(G):{}});return}}}
+
+/* ---------- lessons ---------- */
+const LESSONS=[
+ {id:"budget",n:"Budgeting & Cash Flow",ic:"📊",perk:"Meal-planning pro: groceries cost 8% less",
+  body:["<b>Gross pay</b> is what you earn. <b>Net pay</b> is what lands in your account after taxes and deductions. Always budget from net pay.","A popular guideline is <b>50/30/20</b>: 50% of take-home for needs, 30% for wants and 20% for savings and extra debt payments.","<b>Pay yourself first.</b> Automate savings on payday so the money never feels available to spend."],
+  q:[["You take home $2,400 a month. Under 50/30/20, how much goes to savings and debt payoff?",["$600","$480","$300"],1],["Which of these is a <i>need</i>?",["A streaming subscription","Rent","Concert tickets"],1],["\"Pay yourself first\" means…",["Buy something nice every payday","Move money to savings before spending on anything else","Pay your bills before your rent"],1]]},
+ {id:"credit",n:"Credit Scores",ic:"💳",perk:"Credit insight: see approval odds on every offer",
+  body:["FICO-style scores range from 300 to 850 and come from five factors: <b>payment history (35%)</b>, <b>amounts owed / utilization (30%)</b>, length of history (15%), credit mix (10%) and new credit (10%).","Keep <b>utilization</b> (balance ÷ limit) under 30%, and ideally under 10%. Pay in full every month and you'll never pay interest.","No history? A <b>secured card</b>, backed by a deposit, is the standard way to start."],
+  q:[["The biggest factor in a credit score is…",["Credit mix","Payment history","New credit"],1],["Your card limit is $2,000. What's the most you can carry and stay under 30% utilization?",["$600","$1,000","$300"],0],["Checking your own credit score…",["Lowers it a lot","Has no effect (it's a soft inquiry)","Closes your accounts"],1]]},
+ {id:"debt",n:"Interest & Debt",ic:"⛓️",perk:"Rate shopper: loan quotes 0.5% lower",
+  body:["<b>APR</b> is the yearly cost of borrowing. Credit cards often charge over 20%, so carrying a balance is expensive.","Paying only the <b>minimum</b> mostly covers interest and can stretch a small balance across years.","Two payoff strategies: <b>avalanche</b> (highest interest rate first, which saves the most money) and <b>snowball</b> (smallest balance first, which builds momentum)."],
+  q:[["$1,000 on a card at 24% APR. Roughly how much interest per year if you never pay it down?",["$24","$240","$2,400"],1],["The avalanche method pays off which debt first?",["The smallest balance","The highest interest rate","The newest account"],1],["Why is paying only the minimum costly?",["It raises your limit","Most of the payment goes to interest, so the debt lasts years","Banks charge a fee for it"],1]]},
+ {id:"invest",n:"Investing & Risk",ic:"📈",perk:"Analyst view: see expected return and volatility",
+  body:["Higher potential return comes with higher <b>risk</b> (volatility). Stocks have beaten bonds and cash over long periods, but with deep drops along the way.","<b>Diversification</b> spreads money across many investments, so one failure can't sink you. <b>Index funds</b> diversify cheaply.","<b>Dollar-cost averaging</b> means investing a fixed amount regularly, buying more shares when prices are low. Time in the market beats timing the market."],
+  q:[["Diversification mainly helps you…",["Guarantee profits","Reduce the risk that one investment sinks you","Avoid all taxes"],1],["Investing $200 every month no matter what is called…",["Day trading","Dollar-cost averaging","Shorting"],1],["Stocks drop 20%. For a long-term investor, history suggests…",["Sell everything immediately","Stay invested and keep contributing","Move it all to crypto"],1]]},
+ {id:"tax",n:"Taxes & Paychecks",ic:"🏛️",perk:"Tax savvy: you find deductions, so federal tax is 8% lower",
+  body:["U.S. income tax is <b>progressive</b>: each bracket rate applies only to the income <i>inside</i> that bracket. A raise never lowers your take-home pay.","Your paycheck also withholds <b>FICA</b> (7.65% for Social Security and Medicare) and often state tax. A refund means you <b>overpaid</b> during the year.","<b>Pre-tax 401(k)</b> contributions lower your taxable income. Self-employed people owe ~15.3% self-employment tax and should set money aside."],
+  q:[["A raise pushes you into a higher bracket. What happens?",["All your income is taxed at the higher rate","Only the income above the threshold is taxed higher","You take home less"],1],["A big tax refund means…",["You got free money","You overpaid taxes during the year","You were audited"],1],["Pre-tax 401(k) contributions…",["Increase taxable income","Reduce taxable income now","Are taxed twice"],1]]},
+ {id:"ins",n:"Insurance & Risk",ic:"🛡️",perk:"Smart shopper: insurance premiums 15% lower",
+  body:["A <b>premium</b> is what you pay for coverage. A <b>deductible</b> is what you pay out of pocket before insurance kicks in.","Higher deductibles mean lower premiums, which only makes sense if your emergency fund can cover the deductible.","<b>Renters insurance</b> is cheap and covers your belongings. <b>Health insurance</b> protects you from catastrophic bills."],
+  q:[["A deductible is…",["Your monthly payment","What you pay before insurance pays","A tax refund"],1],["Choosing a higher deductible usually means…",["A higher premium","A lower premium","No coverage"],1],["Renters insurance covers…",["The building itself","Your personal belongings","Your car"],1]]},
+ {id:"fraud",n:"Fraud & Scams",ic:"🔒",perk:"Scam shield: suspicious events are flagged",
+  body:["Scams share red flags: <b>urgency</b>, <b>upfront fees</b>, requests for <b>gift cards or crypto</b>, and prizes you never entered for.","<b>Phishing</b> messages imitate trusted companies. Never sign in from a link; use the official app or the number on your card.","Report fraud quickly. You can <b>freeze your credit</b> for free at each bureau to block new accounts in your name."],
+  q:[["Which is the biggest red flag?",["A store emails a receipt","Someone demands payment in gift cards","Your bank app shows your balance"],1],["An email says your account is locked and links to a login page. You should…",["Click and log in quickly","Contact the bank through its official app or phone number","Reply with your password"],1],["A credit freeze…",["Lowers your score","Blocks new accounts from being opened in your name","Closes your cards"],1]]},
+ {id:"neg",n:"Careers & Negotiation",ic:"🤝",perk:"Negotiator: bigger raises and better job odds",
+  body:["Research market pay before an offer or review. Negotiate on <b>total compensation</b>: salary, benefits, 401(k) match and time off.","Skills are <b>human capital</b>. Training and credentials raise your earning power for decades.","Every choice has an <b>opportunity cost</b>. School costs tuition <i>and</i> the wages you could have earned meanwhile."],
+  q:[["Total compensation includes…",["Only salary","Salary plus benefits like insurance and 401(k) match","Only bonuses"],1],["The wages you give up to attend school are an example of…",["Sunk cost","Opportunity cost","Inflation"],1],["Before negotiating a raise, you should…",["Research what similar roles pay","Threaten to quit","Wait for them to offer"],0]]},
+ {id:"ent",n:"Entrepreneurship",ic:"🚐",perk:"Business acumen: faster business growth, side hustles pay 20% more",
+  body:["<b>Revenue</b> is money coming in. <b>Profit</b> is what's left after costs. A business can grow revenue and still lose money.","<b>Reinvesting</b> profit (marketing, equipment) can grow revenue, but it lowers what you take home today.","Owners have no tax withholding. Set aside <b>25–30%</b> of profit for income and self-employment taxes, and keep records."],
+  q:[["Profit equals…",["Revenue","Revenue minus expenses","Expenses minus revenue"],1],["A sole proprietor's taxes are…",["Withheld automatically","Their responsibility to set aside and pay","Not required"],1],["Reinvesting profit into marketing…",["Always guarantees growth","Lowers take-home pay now in hopes of more revenue later","Is illegal"],1]]}];
+const LI=Object.fromEntries(LESSONS.map(l=>[l.id,l]));
+
+/* ---------- achievements ---------- */
+const ACH=[
+ ["first_inv","First Share","Make your first investment",G=>holdVal(G)>0],
+ ["diverse","Diversified","Hold 4 or more different assets",G=>Object.keys(G.hold).length>=4],
+ ["ef3","Rainy-Day Ready","Save 3 months of essentials",G=>efMonths(G)>=3],
+ ["ef6","Fortress","Save 6 months of essentials",G=>efMonths(G)>=6],
+ ["s700","Good Standing","Reach a 700 credit score",G=>(G.score||0)>=700],
+ ["s800","Exceptional","Reach an 800 credit score",G=>(G.score||0)>=800],
+ ["nw10","Five Figures","Reach a $10,000 net worth",G=>netWorth(G)>=1e4],
+ ["nw50","Momentum","Reach a $50,000 net worth",G=>netWorth(G)>=5e4],
+ ["nw100","Six Figures","Reach a $100,000 net worth",G=>netWorth(G)>=1e5],
+ ["nw250","Quarter-Millionaire","Reach a $250,000 net worth",G=>netWorth(G)>=2.5e5],
+ ["debtfree","Debt-Free","Pay off every loan and card",G=>G.stats.hadDebt&&debtsTotal(G)<1],
+ ["home","Keys in Hand","Buy a home",G=>!!G.home],
+ ["promo","Moving Up","Land a higher-paying job",G=>G.stats.promos>0],
+ ["grad","Graduate","Finish school",G=>G.stats.grad],
+ ["scholar","Scholar","Pass all 9 lessons",G=>LESSONS.every(l=>G.lessons[l.id])],
+ ["ontime","Clockwork","24 months with no late payments",G=>G.m>=24&&!G.lates.some(x=>G.m-x<=24)],
+ ["ceo","Scaling Up","Grow business revenue to $10k/mo",G=>!!G.biz&&G.biz.rev>=1e4],
+ ["scam","Scam Spotter","Avoid a scam",G=>G.stats.scamsAvoided>0],
+ ["k401","Future You","Contribute to a 401(k)",G=>G.k401>0],
+ ["zen","Balanced","Wellbeing above 80",G=>G.wb>=80]];
+function checkAch(G){const out=[];for(const[id,n,d,f]of ACH)if(!G.ach[id]&&f(G)){G.ach[id]=G.m;out.push(n);log(G,`Achievement unlocked: ${n}`,"g")}G.newAch=(G.newAch||[]).concat(out);return out}
+
+/* ---------- final score ---------- */
+function finalScore(G){
+  const nw=netWorth(G),yrs=G.years,inc=G.salary||((G.biz&&G.biz.profit*12)||30000);
+  const parts=[
+    ["Net worth",30,clamp(nw/(9000*yrs)*100,0,100),fm(nw)],
+    ["Credit score",15,clamp(((G.score||550)-500)/320*100,0,100),G.score??"No history"],
+    ["Emergency fund",15,clamp(efMonths(G)/6*100,0,100),efMonths(G).toFixed(1)+" months"],
+    ["Debt health",15,clamp(100-dti(G)/.4*100-(cardBal(G)>1?20:0)-(G.coll>0?40:0),0,100),"DTI "+pc(dti(G),0)],
+    ["Financial knowledge",10,Object.keys(G.lessons).length/LESSONS.length*100,Object.keys(G.lessons).length+"/"+LESSONS.length+" lessons"],
+    ["Wellbeing",15,clamp(G.stats.wbSum/Math.max(1,G.m),0,100),Math.round(G.stats.wbSum/Math.max(1,G.m))+" avg"]];
+  const total=Math.round(parts.reduce((t,p)=>t+p[1]*p[2]/100,0));
+  const grade=total>=93?"A+":total>=85?"A":total>=78?"B+":total>=70?"B":total>=62?"C+":total>=55?"C":total>=45?"D":"F";
+  return{parts,total,grade}}
+if(typeof module!=="undefined")module.exports={newGame,advanceMonth,EVENTS,EVI,SPECIAL,netWorth,calcScore,finalScore,buy,sell,applyCard,applyJob,LESSONS,budgetItems,efMonths,taxSettle,holdVal,cardBal};
+</script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const SAVE="ledger_save_v3",PREF="ledger_prefs2";
+let G=null,VIEW="dash",SEL="VTX",RANGE=36,NWMODE=0,BUSY=false,DOWN=10,ANIM=new Set(["nwc"]);
+let PREFS={theme:"paper",fs:16,rm:false,seen:false};
+try{Object.assign(PREFS,JSON.parse(localStorage.getItem(PREF)||"{}"))}catch(e){}
+const reduced=()=>PREFS.rm||matchMedia("(prefers-reduced-motion: reduce)").matches;
+function applyPrefs(){document.documentElement.dataset.theme=PREFS.theme;document.documentElement.style.setProperty("--fs",PREFS.fs+"px");document.documentElement.classList.toggle("rm",!!PREFS.rm);try{localStorage.setItem(PREF,JSON.stringify(PREFS))}catch(e){}}
+applyPrefs();
+function persist(){try{localStorage.setItem(SAVE,JSON.stringify(G))}catch(e){}}
+function speak(t){$("#live").textContent="";setTimeout(()=>$("#live").textContent=t,30)}
+const ACOL=["--a1","--a2","--a3","--a4","--a5","--a6","--a7","--a8"];
+const acol=s=>css(ACOL[ASSETS.findIndex(a=>a.s===s)]);
+const ln=(l,v,cls="",note="")=>`<div class="ln ${cls}"><span class="lbl">${l}${note?`<small>${note}</small>`:""}</span><span class="dots"></span><span class="val">${v}</span></div>`;
+const CHECK=`<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5l3 3 7-8" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+const LOCK=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>`;
+
+/* ---------- engraving ---------- */
+function troch(cx,cy,R,q,d,rot,steps=720){const r=R/q;let p="";for(let i=0;i<=steps;i++){const t=i/steps*Math.PI*2,x=(R-r)*Math.cos(t)+d*Math.cos((R-r)/r*t),y=(R-r)*Math.sin(t)-d*Math.sin((R-r)/r*t),c=Math.cos(rot),s=Math.sin(rot);p+=(i?"L":"M")+(cx+x*c-y*s).toFixed(1)+" "+(cy+x*s+y*c).toFixed(1)}return p+"Z"}
+function ring(cx,cy,R,q,A,ph,steps=900){let p="";for(let i=0;i<=steps;i++){const t=i/steps*Math.PI*2,r=R+A*Math.sin(q*t+ph)+A*.35*Math.sin(q*2*t-ph);p+=(i?"L":"M")+(cx+r*Math.cos(t)).toFixed(1)+" "+(cy+r*Math.sin(t)).toFixed(1)}return p+"Z"}
+function rosette(size,rings=7,sw=.6,anim=false){const c=size/2;let s=`<svg viewBox="0 0 ${size} ${size}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="${sw}">`;
+  for(let k=0;k<rings;k++){const R=c*(.86-k*.1),q=[24,18,30,12,36,20,16][k%7],A=c*(.05+.012*(k%3)),m=k%2?5:7;let d="";for(let j=0;j<m;j++)d+=ring(c,c,R,q,A,j*Math.PI/m*2/ (k%2?1:2));s+=`<path d="${d}" ${anim?`pathLength="1" style="animation-delay:${(k*.2).toFixed(2)}s"`:""}/>`}
+  return s+"</svg>"}
+function waves(w,h,n=22){let s=`<svg class="bg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true" fill="none" stroke="currentColor" stroke-width=".7">`;
+  for(let j=0;j<n;j++){let p="";const y0=h*(j+.5)/n;for(let x=0;x<=w;x+=6){const y=y0+Math.sin(x/38+j*.45)*9+Math.sin(x/97+j)*5;p+=(x?"L":"M")+x+" "+y.toFixed(1)}s+=`<path d="${p}"/>`}
+  const cx=w*.8,cy=h*.5;for(let k=0;k<4;k++){const R=h*(.52-k*.1);for(let j=0;j<5;j++)s+=`<path d="${ring(cx,cy,R,22-k*3,h*.035,j*Math.PI/5,600)}" stroke-width=".8"/>`}
+  return s+"</svg>"}
+const MARK=`<svg viewBox="0 0 40 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.1"><path d="${troch(20,20,18,12,3.4,0,360)}"/><path d="${troch(20,20,12,9,2.4,.3,300)}"/><circle cx="20" cy="20" r="3.2" fill="currentColor" stroke="none"/></svg>`;
+function postmark(m){const id="pm"+m;return`<svg class="post" viewBox="0 0 100 100" aria-hidden="true" fill="none" stroke="currentColor"><circle cx="50" cy="50" r="40" stroke-width="1.5"/><circle cx="50" cy="50" r="32" stroke-width=".8"/><path id="${id}" d="M18 50a32 32 0 1 1 64 0" fill="none" stroke="none"/><text font-size="10" font-weight="700" letter-spacing="2" fill="currentColor" stroke="none"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${MON[m%12].toUpperCase()} ${2027+Math.floor(m/12)}</textPath></text><text x="50" y="62" text-anchor="middle" font-size="15" font-family="var(--serif)" fill="currentColor" stroke="none">${String(m%12+1).padStart(2,"0")}</text>${[0,1,2,3].map(i=>`<path d="M-30 ${30+i*12} q12 -6 24 0 t24 0 t24 0 t24 0 t24 0 t24 0" stroke-width="1" opacity=".6"/>`).join("")}</svg>`}
+
+/* ---------- avatar ---------- */
+const SKIN=["#f6d7c3","#eac1a0","#d29f7a","#a8714f","#7a4e33","#4e3222"],HAIRC=["#1d1a17","#4a2f1e","#8a5a2b","#d9b46a","#b3412f","#7a7f8c"],SHIRT=["#183A2E","#2E4F8F","#B3362B","#8A6A1F","#6B4C8A","#E9E2CF"];
+function avatar(a,size=120,bg=true){const sk=SKIN[a.skin],hc=HAIRC[a.hc],sh=SHIRT[a.shirt],u="a"+Math.random().toString(36).slice(2,7);
+  const hair=[`<path d="M37 52c0-20 11-28 23-28s24 8 23 28c-4-10-12-15-23-15s-19 5-23 15z" fill="${hc}"/>`,
+   `<path d="M35 56c-2-24 11-34 25-34s27 10 25 34l2 26c-6-2-8-10-7-24-4-13-10-19-20-19s-16 6-20 19c1 14-1 22-7 24z" fill="${hc}"/>`,
+   `<path d="M37 52c0-20 11-28 23-28s24 8 23 28c-4-10-12-15-23-15s-19 5-23 15z" fill="${hc}"/><circle cx="60" cy="20" r="10" fill="${hc}"/>`,
+   `<g fill="${hc}">${[[40,40],[48,31],[60,27],[72,31],[80,40],[44,35],[76,35],[54,28],[66,28]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="9"/>`).join("")}</g>`][a.hair];
+  return`<svg viewBox="0 0 120 120" width="${size}" height="${size}" aria-hidden="true"><defs><clipPath id="${u}"><circle cx="60" cy="60" r="60"/></clipPath></defs><g clip-path="url(#${u})">${bg?`<rect width="120" height="120" fill="var(--paper2)"/>`:""}<path d="M14 124c3-30 22-40 46-40s43 10 46 40z" fill="${sh}"/><path d="M48 86l12 10 12-10" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2"/><rect x="52" y="66" width="16" height="20" rx="6" fill="${sk}"/><ellipse cx="60" cy="53" rx="22" ry="24" fill="${sk}"/>${hair}<circle cx="52" cy="55" r="2.3" fill="#1b1a16"/><circle cx="68" cy="55" r="2.3" fill="#1b1a16"/><path d="M53 64q7 5 14 0" fill="none" stroke="#1b1a16" stroke-width="2" stroke-linecap="round"/></g></svg>`}
+
+/* ---------- charts ---------- */
+function niceStep(r){const p=Math.pow(10,Math.floor(Math.log10(r||1))),n=r/p;return(n<1.5?1:n<3?2:n<7?5:10)*p}
+function hatch(x,col){const c=document.createElement("canvas");c.width=c.height=8;const g=c.getContext("2d");g.strokeStyle=col;g.globalAlpha=.32;g.lineWidth=1;g.beginPath();g.moveTo(0,8);g.lineTo(8,0);g.moveTo(-2,2);g.lineTo(2,-2);g.moveTo(6,10);g.lineTo(10,6);g.stroke();return x.createPattern(c,"repeat")}
+function lineChart(cv,cfg){
+  const wrap=cv.parentElement,dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=cfg.h||240;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+"px";const x=cv.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);
+  const L=cfg.padL??60,Rr=8,T=10,B=26,all=cfg.series.flatMap(s=>s.d).filter(v=>isFinite(v));
+  let mn=Math.min(...all),mx=Math.max(...all);if(cfg.zero)mn=Math.min(0,mn);if(mx-mn<1e-6){mx+=1;mn-=1}
+  const st=niceStep((mx-mn)/4);mn=Math.floor(mn/st)*st;mx=Math.ceil(mx/st)*st;
+  const n=Math.max(...cfg.series.map(s=>s.d.length)),X=i=>L+(n<2?0:i/(n-1))*(W-L-Rr),Y=v=>T+(1-(v-mn)/(mx-mn))*(H-T-B);
+  const ink=css("--ink"),ink2=css("--ink2"),rule=css("--rule"),font=getComputedStyle(document.body).fontFamily;
+  const draw=(prog=1,hi=null)=>{x.clearRect(0,0,W,H);x.font=`12px ${font}`;x.textBaseline="middle";
+    for(let v=mn;v<=mx+st/2;v+=st){x.strokeStyle=rule;x.lineWidth=1;x.beginPath();x.moveTo(L,Y(v)+.5);x.lineTo(W-Rr,Y(v)+.5);x.stroke();x.fillStyle=ink2;x.textAlign="right";x.fillText(cfg.fy?cfg.fy(v):fk(v),L-10,Y(v))}
+    x.strokeStyle=ink;x.lineWidth=1.5;x.beginPath();x.moveTo(L,H-B+.5);x.lineTo(W-Rr,H-B+.5);x.stroke();
+    if(cfg.labels){x.textAlign="center";x.fillStyle=ink2;const k=Math.max(1,Math.ceil(n/6));for(let i=0;i<n;i+=k){x.fillText(cfg.labels[i]||"",X(i),H-10);x.beginPath();x.moveTo(X(i),H-B);x.lineTo(X(i),H-B+4);x.stroke()}}
+    const upto=Math.max(1,Math.ceil(n*prog));
+    for(const s of cfg.series){const d=s.d.slice(0,upto);if(!d.length)continue;const col=s.c,base=Y(Math.max(mn,Math.min(0,mx)));
+      if(s.fill&&d.length>1){x.fillStyle=hatch(x,col);x.beginPath();d.forEach((v,i)=>i?x.lineTo(X(i),Y(v)):x.moveTo(X(i),Y(v)));x.lineTo(X(d.length-1),base);x.lineTo(X(0),base);x.closePath();x.fill()}
+      x.strokeStyle=col;x.lineWidth=s.w||2;x.lineJoin="round";if(s.dash)x.setLineDash(s.dash);x.beginPath();d.forEach((v,i)=>i?x.lineTo(X(i),Y(v)):x.moveTo(X(i),Y(v)));x.stroke();x.setLineDash([]);
+      if(prog>=1&&!s.dash){const li=d.length-1;x.fillStyle=css("--sheet");x.strokeStyle=col;x.lineWidth=2;x.beginPath();x.arc(X(li),Y(d[li]),4,0,7);x.fill();x.stroke()}}
+    if(hi!=null){x.strokeStyle=ink2;x.lineWidth=1;x.setLineDash([3,3]);x.beginPath();x.moveTo(X(hi)+.5,T);x.lineTo(X(hi)+.5,H-B);x.stroke();x.setLineDash([]);for(const s of cfg.series){if(s.d[hi]==null)continue;x.fillStyle=css("--sheet");x.strokeStyle=s.c;x.lineWidth=2;x.beginPath();x.arc(X(hi),Y(s.d[hi]),4.5,0,7);x.fill();x.stroke()}}};
+  if(cfg.anim&&!reduced()){const t0=performance.now(),dur=700;const step=t=>{const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);draw(e);if(p<1)requestAnimationFrame(step)};requestAnimationFrame(step)}else draw();
+  let tip=wrap.querySelector(".tip");if(!tip){tip=document.createElement("div");tip.className="tip";wrap.appendChild(tip)}
+  cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),i=clamp(Math.round((e.clientX-r.left-L)/(W-L-Rr)*(n-1)),0,n-1);draw(1,i);
+    tip.innerHTML=`<div class="soft">${cfg.labels?cfg.labels[i]:""}</div>`+cfg.series.filter(s=>s.d[i]!=null).map(s=>`<div>${s.name?s.name+": ":""}<b>${cfg.ft?cfg.ft(s.d[i]):fm(s.d[i])}</b></div>`).join("");
+    tip.style.left=X(i)+"px";tip.style.top=Math.min(...cfg.series.filter(s=>s.d[i]!=null).map(s=>Y(s.d[i])))+"px";tip.style.opacity=1};
+  cv.onmouseleave=()=>{draw();tip.style.opacity=0}}
+function spark(d,c,w=120,h=30){if(d.length<2)return"";const mn=Math.min(...d),mx=Math.max(...d),r=mx-mn||1;const pts=d.map((v,i)=>`${(i/(d.length-1)*w).toFixed(1)},${(h-3-(v-mn)/r*(h-6)).toFixed(1)}`).join(" ");return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="1.6" stroke-linejoin="round"/></svg>`}
+function gauge(score){const ang=s=>Math.PI*(1-(s-300)/550),P=(s,r)=>[120+r*Math.cos(ang(s)),120-r*Math.sin(ang(s))];let ticks="";
+  for(let s=300;s<=850;s+=25){const big=s%100===0||s===850,[x1,y1]=P(s,96),[x2,y2]=P(s,big?82:88);ticks+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--ink)" stroke-width="${big?1.5:.8}"/>`;if(big&&s%100===0){const[tx,ty]=P(s,68);ticks+=`<text x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--ink2)">${s}</text>`}}
+  const bands=[[300,580,"var(--red)"],[580,670,"var(--a4)"],[670,740,"var(--blue)"],[740,850,"var(--gain)"]].map(([a,b,c])=>{const[x1,y1]=P(a,104),[x2,y2]=P(b,104);return`<path d="M${x1.toFixed(1)} ${y1.toFixed(1)}A104 104 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" fill="none" stroke="${c}" stroke-width="5"/>`}).join("");
+  const rot=score==null?-90:((score-300)/550*180-90);
+  return`<svg class="gauge" viewBox="0 0 240 140" width="100%" style="max-width:300px" role="img" aria-label="Credit score ${score??"not available yet"}">${bands}${ticks}<g class="needle" style="transform:rotate(${rot}deg)"><line x1="120" y1="120" x2="120" y2="34" stroke="var(--ink)" stroke-width="2"/></g><circle cx="120" cy="120" r="6" fill="var(--ink)"/></svg>`}
+
+/* ---------- helpers ---------- */
+const seg=(key,opts,cur,full)=>`<div class="seg${full?" full":""}" role="radiogroup">${opts.map(([v,l])=>`<button type="button" role="radio" aria-checked="${String(v)===String(cur)}" data-act="set" data-k="${key}" data-v="${v}">${l}</button>`).join("")}</div>`;
+const chg=(r,d=1)=>`<span class="${r>=0?"gain":"loss"}">${r>=0?"+":"−"}${pc(Math.abs(r),d)}</span>`;
+const dm=n=>`<span class="${n>=0?"gain":"loss"}">${n>=0?"+":"−"}${fm(Math.abs(n))}</span>`;
+function getPath(o,p){return p.split(".").reduce((a,k)=>a[k],o)}
+function setPath(o,p,v){const k=p.split(".");const last=k.pop();k.reduce((a,x)=>a[x],o)[last]=v}
+function toast(t,k=""){const box=$("#toasts");while(box.children.length>=3)box.firstChild.remove();const d=document.createElement("div");d.className="toast "+k;d.innerHTML=t;box.appendChild(d);setTimeout(()=>{d.classList.add("out");setTimeout(()=>d.remove(),260)},4200)}
+function countTo(el,from,to,dur=900){if(!el)return;if(reduced()||Math.abs(to-from)<1){el.textContent=fm(to);return}const t0=performance.now();const f=t=>{const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);el.textContent=fm(from+(to-from)*e);if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
+function coach(){const ef=efMonths(G),cc=cardBal(G);
+  if(G.coll>0)return["You have unpaid bills in collections. Pay them first: they grow at 24% and lower your credit score every month.","bank","Pay it off"];
+  if(G.cash<0)return["Your checking account is below zero. Move money from savings or cut spending before the month ends.","bank","Move money"];
+  if(cc>1&&G.autopay!=="full")return[`You're carrying ${fm(cc)} on credit cards at up to ${maxApr(G)}% interest. Paying it off is a guaranteed return no investment can match.`,"bank","Pay the card"];
+  if(G.wb<35)return["Your wellbeing is low, and burnout costs money. Budget a little more for fun, or cut back side-hustle hours.","budget","Adjust budget"];
+  if(ef<1)return["Build a starter emergency fund worth one month of essentials. Turn up auto-save on your budget.","budget","Turn up auto-save"];
+  if(!G.cards.length&&G.m>1)return["You don't have a credit card yet. A secured card, used lightly and paid in full each month, builds your score.","bank","See card offers"];
+  if(canK(G)&&G.k401pct<.04)return["Your employer matches 401(k) contributions up to 4% of your pay. Skipping it leaves free money on the table.","career","Set 401(k)"];
+  if(ef<3)return[`Next milestone: three months of essentials in savings. You have ${ef.toFixed(1)}.`,"budget","Open budget"];
+  if(holdVal(G)<1)return["Your safety net is solid. A diversified index fund is a sensible first investment.","market","Open markets"];
+  if(!Object.keys(G.lessons).length)return["Each lesson you pass unlocks a permanent advantage in the game.","learn","Start a lesson"];
+  return["You're on track. Keep spending below what you earn, invest steadily, and let compounding do the work.","dash",""]}
+
+/* ============================ TITLE ============================ */
+let SU={step:0,name:"",av:{skin:1,hair:0,hc:0,shirt:0},city:"phx",path:"work",diff:1,years:10};
+function hasSave(){try{const s=JSON.parse(localStorage.getItem(SAVE));return s&&s.v===3?s:null}catch(e){return null}}
+function renderTitle(){const sv=hasSave();
+  $("#root").innerHTML=`<div class="title"><section class="hero">
+    <div class="ros">${rosette(700,8,.7,true)}</div>
+    <div class="row" style="justify-content:space-between"><div class="word">${MARK}<span class="sr">Ledger</span></div><button class="btn sm quiet" data-act="settings">Settings</button></div>
+    <h1>Ledger</h1>
+    <p class="lead">Ten years of paychecks, bills and decisions. See what you can build.</p>
+    <div class="facts"><div>Real federal brackets, FICA and state tax</div><div>A credit score built on the five FICO factors</div><div>Eight investments through bull and bear markets</div><div>Car loans, mortgages and a 401(k) match</div><div>Thirty life events that test your plan</div><div>Nine lessons, each with a lasting perk</div></div>
+    ${sv?`<div><button class="btn primary" data-act="continue">Continue ${esc(sv.name)}'s game, ${dateLong(sv.m)}</button></div>`:""}
+  </section><section class="form" aria-label="New game">${wizard()}</section></div>`}
+function wizard(){const s=SU.step,names=["You","City","Path","Challenge"];
+  const prog=`<div class="prog" aria-hidden="true">${names.map((n,i)=>`<span class="${i<=s?"on":""}">${i+1}. ${n}</span>`).join("")}</div>`;let body="";
+  const sw=(k,arr,l)=>`<div class="lab">${l}</div><div class="sw" role="radiogroup" aria-label="${l}">${arr.map((c,i)=>`<button type="button" role="radio" aria-label="${l} ${i+1}" aria-checked="${SU.av[k]===i}" style="background:${c}" data-act="av" data-k="${k}" data-v="${i}"></button>`).join("")}</div>`;
+  if(s===0)body=`<h2>Open your account</h2><p class="soft">You're 18, just out of high school, with $1,500 saved.</p>
+    <div style="margin-top:18px"><label for="nm">Your name</label><input type="text" id="nm" maxlength="18" value="${esc(SU.name)}" autocomplete="off"></div>
+    <div class="av"><div id="avp">${avatar(SU.av)}</div><div>${sw("skin",SKIN,"Skin")}${sw("hc",HAIRC,"Hair color")}${sw("shirt",SHIRT,"Shirt")}<div class="lab">Hair</div><div style="margin-top:6px">${seg("su.hair",[[0,"Short"],[1,"Long"],[2,"Bun"],[3,"Curly"]],SU.av.hair)}</div></div></div>`;
+  if(s===1)body=`<h2>Where will you live?</h2><p class="soft">Rent, wages and taxes all depend on the city.</p><div class="opts" role="radiogroup">${Object.entries(CITIES).map(([k,c])=>`<button type="button" role="radio" aria-checked="${SU.city===k}" data-act="su" data-k="city" data-v="${k}"><span class="dot"></span><span><b>${c.n}</b><small>${c.d}</small><span class="f">1-bedroom ${fm(c.rent[3])} a month, ${c.stateTax?pc(c.stateTax,1)+" state tax":"no state income tax"}</span></span></button>`).join("")}</div>`;
+  if(s===2)body=`<h2>Choose a path</h2><p class="soft">None of these is the right answer. Each trades something for something else.</p><div class="opts" role="radiogroup">${Object.entries(PATHS).map(([k,p])=>`<button type="button" role="radio" aria-checked="${SU.path===k}" data-act="su" data-k="path" data-v="${k}"><span class="dot"></span><span><b>${p.n}</b><small>${p.d}</small><span class="f">${p.facts.join(", ")}</span></span></button>`).join("")}</div>`;
+  if(s===3)body=`<h2>Set the challenge</h2><p class="soft">Harder games bring more emergencies and rougher markets.</p>
+    <div style="margin:20px 0 6px" class="lab">Difficulty</div>${seg("su.diff",[[0,"Relaxed"],[1,"Realistic"],[2,"Brutal"]],SU.diff,1)}
+    <div style="margin:20px 0 6px" class="lab">Length</div>${seg("su.years",[[5,"5 years, about 20 minutes"],[10,"10 years, about 40 minutes"]],SU.years,1)}
+    <div class="row" style="margin-top:26px;gap:18px;flex-wrap:nowrap">${avatar(SU.av,64)}<div><b class="serif" style="font-size:1.3rem">${esc(SU.name||"Player")}</b><div class="soft">${PATHS[SU.path].n} in ${CITIES[SU.city].n}</div></div></div>`;
+  return prog+`<div class="swap">${body}</div><div class="wnav">${s?`<button class="btn quiet" data-act="sustep" data-v="-1">Back</button>`:"<span></span>"}${s<3?`<button class="btn primary" data-act="sustep" data-v="1">Continue</button>`:`<button class="btn primary" data-act="begin">Start your first month</button>`}</div>`}
+function rerenderWizard(swap){const w=$(".form");if(!w)return;w.innerHTML=wizard();if(!swap)w.querySelector(".swap")?.classList.remove("swap")}
+
+/* ============================ SHELL ============================ */
+const NAV=[["dash","Overview"],["budget","Budget"],["market","Markets"],["bank","Bank and credit"],["career","Career"],["prop","Car and home"],["learn","Lessons"],["ach","Awards"]];
+function renderShell(){$("#root").innerHTML=`<header><div class="mast" id="mast"></div><nav class="tabs" id="tabs" aria-label="Sections"></nav></header><div class="sheet"><main class="page" id="view" tabindex="-1"></main></div>`;renderAll()}
+function renderTabs(){const un=LESSONS.filter(l=>!G.lessons[l.id]).length;
+  $("#tabs").innerHTML=NAV.map(([k,l])=>`<button data-act="nav" data-v="${k}" ${VIEW===k?'aria-current="page"':""}>${l}${k==="learn"&&un?`<span class="n" aria-label="${un} not passed">${un}</span>`:""}</button>`).join("")}
+function ruler(){const n=G.years*12,w=1000;let s=`<svg viewBox="0 0 ${w} 14" preserveAspectRatio="none" aria-hidden="true">`;
+  for(let i=0;i<=n;i++){const x=(i/n*w).toFixed(1),y=i%12===0;s+=`<line x1="${x}" x2="${x}" y1="${y?0:7}" y2="13" stroke="var(--${y?"ink":"rule"})" stroke-width="${y?1.5:1}" vector-effect="non-scaling-stroke"/>`}
+  return s+`<line x1="0" x2="${w}" y1="13" y2="13" stroke="var(--ink2)" vector-effect="non-scaling-stroke"/><rect class="fill" x="0" y="11" height="3" width="${(G.m/n*w).toFixed(1)}" fill="var(--red)"/></svg>`}
+function renderMast(flip){
+  $("#mast").innerHTML=`<div class="word">${MARK}<span>Ledger</span></div>
+   <div class="when"><div class="d"><b class="${flip&&!reduced()?"flip":""}">${dateLong(G.m)}</b><span class="soft small">Month ${Math.min(G.m+1,G.years*12)} of ${G.years*12}</span></div><div class="ruler" title="Years elapsed">${ruler()}</div>
+    <div class="stats"><span>Checking <b>${fm(G.cash)}</b></span><span>Credit score <b>${G.score??"none yet"}</b></span><span>Wellbeing <b>${Math.round(G.wb)}</b></span><span>Economy <b>${REG[G.regime].n.toLowerCase()}</b></span></div></div>
+   <div class="acts">${G.over?`<button class="btn primary" data-act="report">See your results</button>`:`<button class="btn quiet" data-act="adv3">Skip 3 months</button><button class="btn primary" data-act="adv" aria-keyshortcuts="n">End month</button>`}<button class="btn quiet" data-act="settings" aria-label="Settings">Settings</button></div>`}
+function renderAll(flip){renderMast(flip);renderTabs();renderView()}
+function renderView(){const v=$("#view"),k=focusKey();
+  v.innerHTML=({dash:vDash,budget:vBudget,market:vMarket,bank:vBank,career:vCareer,prop:vProp,learn:vLearn,ach:vAch,report:vReport}[VIEW])();
+  after();restoreFocus(k)}
+function focusKey(){const a=document.activeElement;if(!a||!a.dataset)return null;const d=a.dataset;return a.id?"#"+a.id:d.act?`[data-act="${d.act}"]${d.v!=null?`[data-v="${d.v}"]`:""}${d.k?`[data-k="${d.k}"]`:""}${d.id?`[data-id="${d.id}"]`:""}`:null}
+function restoreFocus(k){if(!k)return;try{const e=document.querySelector(k);e&&e.focus({preventScroll:true})}catch(e){}}
+function commit(){calcScore(G);persist();renderMast();renderTabs();renderView()}
+function go(v){if(v===VIEW){renderView();return}const i0=NAV.findIndex(n=>n[0]===VIEW),i1=NAV.findIndex(n=>n[0]===v);document.documentElement.dataset.dir=i1<i0?-1:1;
+  const run=()=>{VIEW=v;ANIM.add("nwc");ANIM.add("pxc");ANIM.add("bzc");renderTabs();renderView();window.scrollTo(0,0)};
+  if(document.startViewTransition&&!reduced())document.startViewTransition(run);else run();$("#view").focus({preventScroll:true})}
+
+/* ============================ VIEWS ============================ */
+function vDash(){const nw=netWorth(G),f=G.flow,ef=efMonths(G),[tip,to,cta]=coach();
+  const parts=[["Cash and savings",G.cash+G.hysa+(G.cd?G.cd.amt:0)+G.deposit,"--a2"],["Investments",holdVal(G),"--a1"],["401(k)",G.k401,"--a5"],["Car",G.car?G.car.val:0,"--a7"],["Home",G.home?G.home.val:0,"--a4"]].filter(p=>p[1]>0);
+  const tot=parts.reduce((t,p)=>t+p[1],0)||1;
+  const goals=[["Three months of essentials saved",ef>=3,`${ef.toFixed(1)} of 3 months`],["A credit score of 740 or higher",(G.score||0)>=740,G.score?`Now ${G.score}`:"No score yet"],["No credit card balance",cardBal(G)<1,cardBal(G)<1?"Clear":`${fm(cardBal(G))} owed`],[`Net worth of ${fk(9000*G.years)}`,nw>=9000*G.years,`${Math.max(0,Math.round(nw/(9000*G.years)*100))}% of the way`],["Every lesson passed",Object.keys(G.lessons).length===LESSONS.length,`${Object.keys(G.lessons).length} of ${LESSONS.length}`]];
+  return`<div class="grid">
+   <section class="c8" aria-label="Net worth">${noteHTML(nw)}</section>
+   <section class="c4 sec"><h2>Accounts</h2>${ln("Checking",fm(G.cash),G.cash<0?"loss":"")}${ln("Savings",fm(G.hysa))}${G.cd?ln("CD",fm(G.cd.amt)):""}${ln("Investments",fm(holdVal(G)))}${ln("401(k)",fm(G.k401))}${G.car?ln("Car",fm(G.car.val)):""}${G.home?ln("Home",fm(G.home.val)):""}${ln("Credit cards",cardBal(G)>0?"−"+fm(cardBal(G)):"$0")}${ln("Loans",loanBal(G)>0?"−"+fm(loanBal(G)):"$0")}${G.coll>0?ln("Collections","−"+fm(G.coll),"loss"):""}${ln("Net worth",fm(nw),"tot")}</section>
+   <section class="c12"><div class="memo"><p>${tip}</p>${cta?`<button class="link act" data-act="nav" data-v="${to}">${cta}</button>`:""}</div></section>
+   <section class="c12 sec"><div class="top"><h2>${NWMODE?"What you own and what you owe":"Net worth over time"}</h2>${seg("ui.nwr",[[0,"Net worth"],[1,"Assets and debts"]],NWMODE)}</div><div class="chart"><canvas id="nwc" aria-label="Chart of net worth by month"></canvas></div></section>
+   <section class="c4 sec"><h2>${G.m?`${MONF[(G.m-1)%12]}'s statement`:"Statement"}</h2>${f?statement(f):`<p class="empty">Your first statement arrives when you end the month.</p>`}</section>
+   <section class="c4 sec"><h2>Where your money sits</h2>${tot>1?`<div class="strip" role="img" aria-label="${parts.map(p=>`${p[0]} ${pc(p[1]/tot,0)}`).join(", ")}">${parts.map(p=>`<i style="width:${p[1]/tot*100}%;background:var(${p[2]})"></i>`).join("")}</div><div style="margin-top:12px">${parts.map(p=>ln(`<span class="key" style="background:var(${p[2]})"></span>${p[0]}`,pc(p[1]/tot,0))).join("")}</div>`:`<p class="empty">Nothing yet.</p>`}
+    <h2 style="margin-top:26px">Health</h2>${ln("Emergency fund",`${ef.toFixed(1)} months`,ef<1?"loss":"","goal 3 to 6")}${ln("Debt-to-income",pc(dti(G),0),dti(G)>.36?"loss":"","keep under 36%")}${ln("Interest paid so far",fm(G.stats.intPaid))}</section>
+   <section class="c4 sec"><h2>Goals</h2>${goals.map(([g,ok,s])=>`<div class="check"><span class="box">${ok?CHECK:""}</span><div><div>${g}</div><div class="soft small">${s}</div></div></div>`).join("")}</section>
+   <section class="c7 sec"><h2>In the news</h2><div class="entries">${G.news.slice(0,6).map(n=>`<div class="e"><time>${dateStr(n.m)}</time><div>${esc(n.t)}${n.sym?` <span class="soft small">(${n.sym})</span>`:""}</div></div>`).join("")}</div></section>
+   <section class="c5 sec"><h2>Passbook</h2><div class="entries">${G.log.length?G.log.slice(0,7).map(l=>`<div class="e ${l.k}"><time>${dateStr(l.m)}</time><div>${l.t}</div></div>`).join(""):`<p class="empty">Your decisions will be recorded here.</p>`}</div></section></div>`}
+function noteHTML(nw){const serial=`LG ${String(G.m).padStart(4,"0")} ${String(Math.abs(Math.round(nw))%100000).padStart(5,"0")}`;
+  return`<div class="note" id="note">${waves(800,260)}<div class="frame"><div class="portrait">${avatar(G.av,180,false)}</div><div><div class="k">${esc(G.name)}'s net worth</div><div class="v" id="nwv">${fm(nw)}</div><div class="soft">${dm(nw-G.stats.start)} since January 2027</div></div><span class="serial">${serial}</span><div id="stampslot"></div></div></div>`}
+function statement(f){const ng=v=>v>.5?"−"+fm(v):"$0";const inc=f.gross+f.side+Math.max(0,f.biz)+f.unemp;
+  return ln("Income",fm(inc))+ln("Taxes withheld","−"+fm(f.tax))+(f.k401?ln("401(k)","−"+fm(f.k401)):"")+ln("Living costs","−"+fm(f.exp))+ln("Debt payments","−"+fm(f.debt+f.cardPay))+ln("Saved and invested","−"+fm(f.saved+f.invested))+(f.interest+f.div>0.5?ln("Interest and dividends","+"+fm(f.interest+f.div)):"")}
+
+function vBudget(){const b=G.budget,C=CITIES[G.city],I=G.infl,B=budgetItems(G),A=k=>{const i=B.items.find(i=>i.k===k);return i?fm(i.a):"$0"};
+  const row=(l,s,ctl,amt)=>`<div class="brow"><div><b>${l}</b><small>${s}</small></div><div class="ctl">${ctl}</div><div class="amt">${amt}</div></div>`;
+  const rng=(k,min,max,step,lab)=>`<input type="range" data-bind="${k}" min="${min}" max="${max}" step="${step}" value="${getPath(G,k)}" aria-label="${lab}">`;
+  const rent=G.home?`<span class="soft">You own your home</span>`:seg("budget.housing",HOUSING.map((n,i)=>[i,`${n}, ${fk(C.rent[i]*I*(i?(G.rentMul||1):1))}`]),b.housing);
+  return`<div class="head"><div><h1>Budget</h1><p>Prices are rising ${pc(G.inflR)} a year. Changes start next month.</p></div></div>
+  <div class="grid"><div class="c7"><section class="sec"><h2>Needs</h2>
+   ${row("Housing",G.home?"Your mortgage is counted with your debts":"Rent, plus utilities when you live on your own",rent,A(G.home?"ptax":"rent"))}
+   ${row("Groceries","Cooking at home",seg("budget.groceries",[[0,"Frugal"],[1,"Balanced"],[2,"Premium"]],b.groceries),A("groc"))}
+   ${row("Health insurance",b.health?"You're covered":"One emergency room visit could cost thousands",seg("budget.health",[["true","Covered"],["false","Go without"]],b.health),A("health"))}
+   ${G.home?"":row("Renters insurance","Covers your belongings",seg("budget.renters",[["true","Yes"],["false","No"]],b.renters),A("renters"))}
+   ${row(G.car?"Gas and car insurance":"Transit pass",G.car?"Change this under Car and home":"Buy a car under Car and home","",A("trans"))}</section>
+   <section class="sec" style="margin-top:34px"><h2>Wants</h2>
+   ${row("Dining out","Restaurants and takeout",rng("budget.dining",0,800,10,"Dining out"),`<span id="o-budget.dining">${fm(b.dining)}</span>`)}
+   ${row("Phone and subscriptions","Your plan and streaming",rng("budget.subs",25,250,5,"Phone and subscriptions"),`<span id="o-budget.subs">${fm(b.subs)}</span>`)}
+   ${row("Fun and shopping","Hobbies, clothes, nights out",rng("budget.fun",0,1200,10,"Fun and shopping"),`<span id="o-budget.fun">${fm(b.fun)}</span>`)}
+   ${row("Giving","Donations raise your wellbeing",rng("budget.giving",0,400,5,"Giving"),`<span id="o-budget.giving">${fm(b.giving)}</span>`)}</section>
+   <section class="sec" style="margin-top:34px"><h2>Pay yourself first</h2><p class="soft" style="margin:-6px 0 6px">A share of every paycheck moves before you can spend it.</p>
+   ${row("Automatic savings",`Earns ${pc(hysaRate(G),2)} a year`,rng("budget.autoSave",0,50,1,"Automatic savings percent"),`<span id="o-budget.autoSave">${b.autoSave}%</span>`)}
+   ${row("Automatic investing","Buys the same dollar amount every month",rng("budget.autoInvest",0,50,1,"Automatic investing percent"),`<span id="o-budget.autoInvest">${b.autoInvest}%</span>`)}
+   ${row("Invest in","Used for automatic investing",`<select data-bind="budget.autoSym" aria-label="Fund for automatic investing">${ASSETS.map(a=>`<option value="${a.s}" ${a.s===b.autoSym?"selected":""}>${a.n}</option>`).join("")}</select>`,"")}
+   ${row("Pay with a credit card",G.cards.length?"Earns rewards and builds credit":"Open a card under Bank and credit first",G.cards.length?seg("cardPct",[[0,"None"],[25,"25%"],[50,"50%"],[100,"All"]],G.cardPct):"","")}</section></div>
+  <aside class="c5"><div class="slip perf" id="bsum" style="position:sticky;top:20px">${budgetSummary()}</div></aside></div>`}
+function budgetSummary(){const pk=paycheck(G),B=budgetItems(G),b=G.budget,side=G.side*4.33*sideRate(G),biz=G.job==="biz"?(G.biz.profit||G.biz.rev*.43):0;
+  const take=pk.net+side+Math.max(0,biz)+pk.unemp,sv=take*b.autoSave/100,iv=take*b.autoInvest/100,debt=loanPmts(G)+cardMins(G);
+  const left=take-sv-iv-B.total-debt,T=Math.max(1,take),needP=(B.needs+debt)/T,wantP=B.wants/T,saveP=(sv+iv+pk.k+pk.match)/T;
+  return`<h2>Each month</h2>
+  ${pk.wage?ln("Gross pay",fm(pk.wage))+(pk.k?ln("401(k), before tax","−"+fm(pk.k)):"")+ln("Federal income tax","−"+fm(pk.fed))+ln("Social Security and Medicare","−"+fm(pk.fica))+ln("State tax","−"+fm(pk.st)):""}
+  ${side?ln("Side hustle","+"+fm(side),"","taxed in April"):""}${biz?ln("Business profit",fm(biz),"","taxed in April"):""}${pk.unemp?ln("Unemployment",fm(pk.unemp)):""}
+  ${ln("Take-home",fm(take),"tot")}
+  <div style="height:16px"></div>${ln("Savings",fm(sv))}${ln("Investing",fm(iv))}${ln("Needs",fm(B.needs))}${ln("Wants",fm(B.wants))}${ln("Loan and card minimums",fm(debt))}
+  ${ln("Left in checking",`<span class="${left<0?"loss":""}">${fm(left)}</span>`,"tot")}
+  ${left<0?`<p class="warn">You're planning to spend more than you take home. The gap will come out of savings, or go to collections.</p>`:""}
+  <h3 style="margin:22px 0 8px">Against the 50/30/20 guideline</h3>
+  <div class="split" role="img" aria-label="Needs ${pc(needP,0)}, wants ${pc(wantP,0)}, saving ${pc(saveP,0)}"><i style="width:${Math.min(100,needP*100)}%;background:var(--a1)"></i><i style="width:${Math.min(100,wantP*100)}%;background:var(--a4)"></i><i style="width:${Math.min(100,saveP*100)}%;background:var(--a6)"></i></div>
+  <div class="marks" aria-hidden="true"><span style="left:50%">50</span><span style="left:80%">80</span></div>
+  ${ln(`<span class="key" style="background:var(--a1)"></span>Needs`,pc(needP,0),"","target 50%")}${ln(`<span class="key" style="background:var(--a4)"></span>Wants`,pc(wantP,0),"","target 30%")}${ln(`<span class="key" style="background:var(--a6)"></span>Saving`,pc(saveP,0),"","target 20%")}
+  ${G.lessons.budget?`<p class="soft small" style="margin-top:10px">${needP>.6?"Needs are heavy. Cheaper housing or transit would help most.":wantP>.35?"Wants are running high. Dining and fun are the easiest to trim.":saveP<.15?"Try to push saving toward 20%.":"This is a well-balanced plan."}</p>`:""}`}
+
+function vMarket(){const a=AS[SEL],h=G.hold[SEL],p=price(G,SEL),tv=holdVal(G),cost=Object.values(G.hold).reduce((t,x)=>t+x.cost,0);
+  const rows=ASSETS.map(x=>{const pr=price(G,x.s),r1=pr/pxAgo(G,x.s,1)-1,r12=pr/pxAgo(G,x.s,12)-1,hh=G.hold[x.s],v=hh?hh.sh*pr:0;
+    return`<tr class="pick ${SEL===x.s?"on":""}" data-act="sel" data-v="${x.s}" tabindex="0" aria-label="${x.n}, ${pr.toFixed(2)}"><td><span class="tk">${x.s}</span> <span class="soft small">${x.sec}</span></td><td>${x.n}</td><td>${spark(G.px[x.s].slice(-24),acol(x.s))}</td><td class="r">${pr.toFixed(2)}</td><td class="r">${chg(r1)}</td><td class="r">${chg(r12)}</td><td class="r">${v?fm(v):""}</td></tr>`}).join("");
+  const exp=a.beta*.066+a.div+a.alpha*12,vol=Math.sqrt((a.beta*.045)**2+a.idio**2)*Math.sqrt(12);
+  return`<div class="head"><div><h1>Markets</h1><p>The economy is in a ${REG[G.regime].n.toLowerCase()}. The central bank rate is ${G.fed.toFixed(2)}%.</p></div><div style="min-width:280px">${ln("Your portfolio",fm(tv))}${ln("Gain or loss",`<span class="${tv-cost>=0?"gain":"loss"}">${fm(tv-cost)}</span>`)}${ln("Cash to invest",fm(G.cash))}</div></div>
+  <div class="grid"><section class="c12 sec tw"><table><caption class="sr">Investments you can buy</caption><thead><tr><th>Ticker</th><th>Name</th><th>Two years</th><th class="r">Price</th><th class="r">Month</th><th class="r">Year</th><th class="r">You own</th></tr></thead><tbody>${rows}</tbody></table></section>
+   <section class="c8 sec"><div class="top"><h2>${a.n}</h2>${seg("ui.range",[[12,"1 year"],[36,"3 years"],[999,"All"]],RANGE)}</div>
+    <div class="row" style="align-items:baseline;gap:16px"><span class="serif" style="font-size:3rem;line-height:1">${p.toFixed(2)}</span>${chg(G.lastRet[SEL]||0)} <span class="soft">this month</span></div>
+    <div class="chart" style="margin-top:16px"><canvas id="pxc" aria-label="Price history for ${a.n}"></canvas></div>
+    <p style="margin-top:14px;max-width:62ch">${a.d}</p>
+    <div style="max-width:420px;margin-top:10px">${ln("Dividend yield",pc(a.div))}${ln("Moves with the market (beta)",a.beta)}${a.rate?ln("Rate-sensitive","Yes"):""}
+    ${G.lessons.invest?ln("Expected return",pc(exp)+" a year")+ln("Typical yearly swing",pc(vol,0))+ln("Risk",vol<.08?"Low":vol<.2?"Moderate":vol<.35?"High":"Extreme"):""}</div>
+    ${G.lessons.invest?"":`<div class="lock" style="margin-top:14px;max-width:420px">${LOCK} Pass the investing lesson to see expected return and risk.</div>`}</section>
+   <aside class="c4"><div class="slip perf"><h2>Order ticket</h2><p class="soft small" style="margin-bottom:12px">${a.s}, ${p.toFixed(2)} a share</p>
+    <label for="tamt">Dollar amount</label><input type="number" id="tamt" min="0" step="10" value="250" inputmode="decimal">
+    <div class="row" style="margin:10px 0 16px;gap:6px">${[100,500,1000].map(v=>`<button class="btn sm quiet" data-act="tset" data-v="${v}">$${v}</button>`).join("")}<button class="btn sm quiet" data-act="tset" data-v="max">All cash</button></div>
+    <div class="row"><button class="btn primary grow" data-act="buy">Buy</button><button class="btn grow" data-act="sell" ${h?"":"disabled"}>Sell</button></div>
+    <div style="margin-top:18px">${h?ln("Shares",h.sh.toFixed(4))+ln("Average cost",fm(h.cost/h.sh,2))+ln("Worth now",fm(h.sh*p))+ln("Gain or loss",`<span class="${h.sh*p-h.cost>=0?"gain":"loss"}">${fm(h.sh*p-h.cost)}</span>`)+`<button class="btn sm danger" style="margin-top:12px;width:100%" data-act="sellall">Sell all ${a.s}</button>`:`<p class="soft">You don't own any ${a.s}.</p>`}</div>
+    <div style="margin-top:18px"><div class="lab" style="margin-bottom:6px">Reinvest dividends</div>${seg("budget.drip",[["true","Yes"],["false","No, pay me cash"]],G.budget.drip)}</div>
+    <p class="soft small" style="margin-top:14px">Profits from selling are taxed at 15% when you file in April.</p></div></aside></div>`}
+
+function vBank(){const sf=G.sf||{},cdRate=+(G.fed+.2).toFixed(2);
+  const fac=(l,w,v,note)=>`<div style="padding:8px 0"><div class="row" style="justify-content:space-between"><span>${l} <span class="soft small">${w} of your score</span></span><b>${Math.round(v)}</b></div><div class="meter" style="margin:6px 0 4px"><i style="width:${v}%;background:var(${v>=80?"--gain":v>=50?"--a4":"--red"})"></i></div><span class="soft small">${note}</span></div>`;
+  const label=G.score==null?"No credit history yet":G.score>=800?"Exceptional":G.score>=740?"Very good":G.score>=670?"Good":G.score>=580?"Fair":"Poor";
+  return`<div class="head"><div><h1>Bank and credit</h1></div></div>
+  <div class="grid">
+   <section class="c4 sec"><h2>Accounts</h2>${ln("Checking",fm(G.cash),G.cash<0?"loss":"")}${ln("High-yield savings",fm(G.hysa),"",pc(hysaRate(G),2))}${ln("Certificate of deposit",G.cd?fm(G.cd.amt):"None","",G.cd?`${G.cd.rate}% until ${dateStr(G.cd.mat)}`:"")}${ln("401(k)",fm(G.k401))}${G.deposit?ln("Card deposit",fm(G.deposit),"","refundable"):""}
+    <h3 style="margin:24px 0 4px">Move money</h3><div class="row"><div class="grow"><label for="tf">From</label><select id="tf"><option value="cash">Checking</option><option value="hysa">Savings</option></select></div><div class="grow"><label for="tt">To</label><select id="tt"><option value="hysa">Savings</option><option value="cash">Checking</option></select></div></div>
+    <div class="row" style="margin-top:10px;align-items:flex-end"><div class="grow"><label for="tfa">Amount</label><input type="number" id="tfa" min="0" step="50" value="500" inputmode="decimal"></div><button class="btn primary" data-act="transfer">Transfer</button></div>
+    <h3 style="margin:24px 0 4px">Certificate of deposit</h3>${G.cd?`<p class="soft">Withdrawing early costs three months of interest.</p><button class="btn sm danger" style="margin-top:10px" data-act="breakcd">Withdraw early</button>`:`<p class="soft">Lock savings for 12 months at a guaranteed ${cdRate}%.</p><div class="row" style="margin-top:8px;align-items:flex-end"><div class="grow"><label for="cda">From savings</label><input type="number" id="cda" min="0" step="100" value="1000"></div><button class="btn" data-act="opencd">Open CD</button></div>`}</section>
+   <section class="c8 sec"><h2>Credit score</h2><div class="row" style="gap:32px;align-items:flex-start;flex-wrap:wrap"><div style="flex:0 1 300px;text-align:center">${gauge(G.score)}<div class="serif" style="font-size:3.4rem;line-height:1;margin-top:-6px">${G.score??"—"}</div><div class="soft">${label}</div></div>
+    <div class="grow" style="min-width:260px">${fac("Payment history","35%",sf.ph,`${G.lates.filter(x=>G.m-x<36).length} late payments in the last three years${G.coll>0?", plus collections":""}`)}${fac("Amount owed","30%",sf.u,sf.ut==null?"No cards yet":`You're using ${pc(sf.ut,0)} of your limits`)}${fac("Length of history","15%",sf.age,`Accounts average ${Math.round(sf.avgAge||0)} months old`)}${fac("Credit mix","10%",sf.mix,["No accounts yet","One kind of credit","Cards and loans"][sf.types])}${fac("New credit","10%",sf.nc,`${sf.inq} applications in the last year`)}</div></div>
+    ${sf.thin?`<p class="soft" style="margin-top:10px">Lenders can't score you without a history. A secured card is the usual way to start.</p>`:""}</section>
+   <section class="c12 sec"><div class="top"><h2>Your cards</h2><div class="row"><span class="soft small">Pay automatically</span>${seg("autopay",[["full","Full balance"],["min","Minimum"],["manual","Off"]],G.autopay)}</div></div>
+    ${G.cards.length?`<div class="ccs">${G.cards.map(c=>{const mn=c.bal>0?Math.min(c.bal,Math.max(25,c.bal*.02+c.lastInt)):0;return`<div class="stack"><div class="cc" style="background:linear-gradient(140deg,${c.c1},${c.c2})">${waves(400,252,14)}<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="nm">${esc(c.n)}</span><span class="chip"></span></div><div><div style="opacity:.8;font-size:.85rem">Balance</div><div class="bal">${fm(c.bal,2)}</div><div style="opacity:.8;font-size:.85rem">${fm(c.limit)} limit, ${c.apr}% interest${c.promo?`, 0% for ${c.promo} more months`:""}</div></div></div>
+      <div class="row" style="align-items:flex-end"><div class="grow"><label for="cp-${c.id}">Payment</label><input type="number" id="cp-${c.id}" min="0" step="10" value="${Math.ceil(c.bal)}"></div><button class="btn sm" data-act="paycard" data-id="${c.id}">Pay</button><button class="btn sm quiet" data-act="paycardfull" data-id="${c.id}">Pay in full</button></div>
+      <div class="row soft small" style="justify-content:space-between"><span>Minimum due ${fm(mn)}</span>${c.bal<.01?`<button class="link" data-act="closecard" data-id="${c.id}">Close this card</button>`:""}</div></div>`}).join("")}</div>`:`<p class="empty">You have no cards. Pick one below to start building credit.</p>`}
+    <h2 style="margin:34px 0 14px">Card offers</h2>${G.lessons.credit?"":`<div class="lock" style="margin-bottom:18px;max-width:520px">${LOCK} Pass the credit lesson to see your approval odds.</div>`}
+    <div class="offers">${CARDS.map(C=>{const own=G.cards.some(c=>c.pid===C.id),od=approvalOdds(G,C);return`<div class="offer"><h3>${C.n}</h3><p class="terms">${C.d}</p>${ln("Limit",fm(C.limit))}${ln("Interest",C.apr+"%")}${ln("Cash back",C.rew?pc(C.rew,1):"None")}<p class="soft small">${C.dep?"Requires a $500 deposit":G.score==null?(C.thin?"Accepts people with no history":"Needs a credit history"):`Best for scores of ${C.min} and up`}${G.lessons.credit?`. <b class="${od>.6?"gain":od>.25?"":"loss"}">${pc(od,0)} chance of approval</b>`:""}</p><button class="btn sm ${own?"quiet":""}" data-act="applycard" data-v="${C.id}" ${own?"disabled":""}>${own?"You have this card":"Apply"}</button></div>`}).join("")}</div></section>
+   <section class="c12 sec"><div class="top"><h2>Loans</h2><span class="soft">${fm(loanBal(G)+G.coll)} owed</span></div>
+    ${G.loans.length||G.coll>0?`<div class="tw"><table><thead><tr><th>Loan</th><th class="r">Balance</th><th class="r">Rate</th><th class="r">Monthly</th><th>Paid off</th><th>Extra payment</th></tr></thead><tbody>
+    ${G.loans.map(l=>`<tr><td><b>${esc(l.n)}</b><div class="soft small">${l.defer?"Paused while you're in school. Interest still grows.":`${l.term}-month term`}</div></td><td class="r">${fm(l.bal)}</td><td class="r">${l.rate}%</td><td class="r">${l.defer?"Paused":fm(l.pmt)}</td><td style="min-width:120px"><div class="meter"><i style="width:${clamp(1-l.bal/Math.max(l.orig,l.bal),0,1)*100}%"></i></div></td><td><div class="row" style="flex-wrap:nowrap;align-items:flex-end"><input type="number" id="lp-${l.id}" min="0" step="50" value="100" style="width:110px" aria-label="Extra payment toward ${esc(l.n)}"><button class="btn sm" data-act="payloan" data-id="${l.id}">Pay</button></div></td></tr>`).join("")}
+    ${G.coll>0?`<tr><td><b class="loss">Collections</b><div class="soft small">Unpaid bills, hurting your credit</div></td><td class="r loss">${fm(G.coll)}</td><td class="r">24%</td><td class="r">Half your spare cash</td><td></td><td><div class="row" style="flex-wrap:nowrap;align-items:flex-end"><input type="number" id="collA" min="0" value="${Math.ceil(G.coll)}" style="width:110px" aria-label="Payment toward collections"><button class="btn sm" data-act="paycoll">Pay</button></div></td></tr>`:""}
+    </tbody></table></div>`:`<p class="empty">You don't owe anything.</p>`}</section></div>`}
+
+function vCareer(){const J=JOBS[G.job],inSchool=G.schoolLeft>0,P=PATHS[G.path];
+  const title=G.unemp?`Looking for work, about ${G.unemp} months left`:J?(G.job==="student"?(G.path==="trade"?"Trade school student with a part-time job":"College student with a part-time job"):J.t):"Not working";
+  let main;
+  if(G.job==="biz"){const z=G.biz;main=`<section class="c7 sec"><h2>Shine Mobile Detailing</h2>
+   ${ln("Monthly revenue",fm(z.rev))}${ln("Operating costs","−"+fm(z.rev*.42),"","42% of revenue")}${ln("Reinvested","−"+fm(z.rev*z.re))}${ln("Your profit",`<span class="${z.profit>=0?"gain":"loss"}">${fm(z.profit)}</span>`,"tot")}
+   <div class="chart" style="margin-top:18px"><canvas id="bzc" aria-label="Business revenue by month"></canvas></div>
+   <h3 style="margin:20px 0 4px">How much to reinvest</h3><p class="soft small" style="margin-bottom:10px">Marketing and equipment. More reinvestment grows revenue faster but pays you less today.</p>${seg("biz.re",[[0,"0%"],[.1,"10%"],[.15,"15%"],[.25,"25%"],[.35,"35%"]],z.re)}
+   <p class="soft small" style="margin-top:18px">No tax is taken out of business profit. You'll owe income tax plus 15.3% self-employment tax in April, so keep cash set aside.</p>
+   <button class="btn danger" style="margin-top:14px" data-act="sellbiz">Sell the business for about ${fm(Math.max(0,z.profit)*12*2.5)}</button></section>`}
+  else main=`<section class="c7 sec"><div class="top"><h2>Job openings</h2><span class="soft">Your skill: ${G.skill.toFixed(1)} of 10</span></div>${inSchool?`<div class="lock" style="margin-bottom:12px">${LOCK} You can apply once you finish school in ${G.schoolLeft} months.</div>`:""}
+   <div class="tw"><table><thead><tr><th>Role</th><th class="r">Salary</th><th>Needs</th><th class="r"></th></tr></thead><tbody>${Object.entries(JOBS).filter(([k])=>!["student","biz"].includes(k)).map(([k,j])=>{const cur=G.job===k&&!G.unemp,eduOk=j.edu==="hs"||G.edu===j.edu,certOk=!j.cert||G.courses[j.cert],cool=(G.cool[k]||0)>G.m;
+    const why=!eduOk?EDU[j.edu]:!certOk?"Bookkeeping certificate":cool?`Reapply in ${dateStr(G.cool[k])}`:"";
+    return`<tr><td><b>${j.t}</b><div class="soft small">${j.f}</div></td><td class="r">${fm(j.s*wm(G))}</td><td class="small">${why||`Skill ${j.sk}+`}</td><td class="r">${cur?`<span class="soft">Your job</span>`:why?"":`<button class="btn sm" data-act="apply" data-v="${k}" ${inSchool?"disabled":""}>Apply, ${pc(jobOdds(G,k),0)} odds</button>`}</td></tr>`}).join("")}</tbody></table></div></section>`;
+  return`<div class="head"><div><h1>Career</h1></div></div>
+  <div class="grid"><section class="c5 sec"><div class="row" style="gap:18px;flex-wrap:nowrap">${avatar(G.av,76)}<div><h2 style="margin:0">${title}</h2><div class="soft">${EDU[G.edu]}</div></div></div>
+   <div style="margin-top:16px">${ln(G.job==="biz"?"Yearly profit":"Salary",G.job==="biz"?fm(G.biz.profit*12):G.unemp?"None":fm(G.salary))}${ln("Skill",G.skill.toFixed(1)+" of 10")}</div>
+   ${inSchool?`<h3 style="margin:16px 0 6px">${P.n}: ${P.school-G.schoolLeft} of ${P.school} months</h3><div class="meter"><i style="width:${(1-G.schoolLeft/P.school)*100}%"></i></div>`:""}
+   ${G.evening?`<h3 style="margin:16px 0 6px">Evening degree: ${30-G.evening.left} of 30 months</h3><div class="meter"><i style="width:${(1-G.evening.left/30)*100}%"></i></div>`:""}
+   ${G.job!=="biz"?`<h3 style="margin:24px 0 4px">Side hustle at ${fm(sideRate(G),2)} an hour</h3><p class="soft small" style="margin-bottom:10px">Deliveries and gig work. More money, less free time. Taxed in April.</p>${seg("side",[[0,"None"],[5,"5 hrs a week"],[10,"10 hrs"],[15,"15 hrs"]],G.side)}`:""}
+   ${canK(G)?`<h3 style="margin:24px 0 4px">401(k) contribution</h3><p class="soft small" style="margin-bottom:10px">Taken before tax, so it lowers your tax bill now. Your employer matches up to 4% of your pay.</p>${seg("k401pct",[[0,"0%"],[.03,"3%"],[.04,"4%"],[.06,"6%"],[.1,"10%"],[.15,"15%"]],G.k401pct)}<div style="margin-top:10px">${ln("You put in",fm(G.salary/12*G.k401pct)+" a month")}${ln("Your employer adds",`<span class="gain">${fm(G.salary/12*Math.min(G.k401pct,.04))} a month</span>`)}</div>`:""}</section>
+   ${main}
+   <section class="c12 sec"><h2>Training</h2><p class="soft" style="margin:-6px 0 18px">Skills improve your odds of being hired and the size of your raises.</p><div class="offers">
+    ${COURSES.map(c=>{const done=c.once&&G.courses[c.id],locked=c.req&&G.edu!==c.req;return`<div class="offer ${locked?"off":""}"><h3>${c.n}</h3><p class="terms">${c.d}</p>${ln("Cost",fm(c.cost))}<button class="btn sm" data-act="course" data-v="${c.id}" ${done||locked?"disabled":""}>${done?"Completed":locked?"Needs a degree":"Enroll"}</button></div>`}).join("")}
+    ${G.edu!=="degree"&&!G.evening&&!inSchool&&G.job!=="biz"?`<div class="offer"><h3>Evening bachelor's degree</h3><p class="terms">Study nights for 30 months while you keep working. Opens analyst careers.</p>${ln("Cost","$18,000 student loan")}<button class="btn sm" data-act="evening">Enroll</button></div>`:""}</div></section></div>`}
+
+function vProp(){const C=CITIES[G.city],carRate=loanRate(G,2.5),mRate=loanRate(G,2.6),gross=grossMonthly(G);
+  const car=G.car?`<div style="max-width:440px">${ln(G.car.n,fm(G.car.val),"","worth today")}<p class="soft small" style="margin:8px 0 12px">Cars lose value every month.</p><button class="btn sm danger" data-act="sellcar">Sell for ${fm(G.car.val)}</button></div>`
+   :`<div class="offers">${CARS.map((c,i)=>{const p=c.p*G.infl,dn=p*.1,pm=amort(p-dn,carRate,60);return`<div class="offer"><h3>${c.n}</h3><div class="serif" style="font-size:2rem;line-height:1.1">${fm(p)}</div>${ln("Down payment",fm(dn))}${ln(`Payment at ${carRate}%`,fm(pm)+" a month")}${ln("Total over 5 years",fm(dn+pm*60))}<div class="row"><button class="btn sm" data-act="buycar" data-v="${i}" data-k="cash">Pay cash</button><button class="btn sm quiet" data-act="buycar" data-v="${i}" data-k="loan">Finance</button></div></div>`}).join("")}</div>`;
+  let home;
+  if(G.home){const mo=G.loans.find(l=>l.type==="mortgage"),eq=G.home.val-(mo?mo.bal:0);home=`<div style="max-width:480px">${ln("Value today",fm(G.home.val),"",`bought for ${fm(G.home.price)}`)}${ln("Mortgage left",fm(mo?mo.bal:0),"",mo?`${mo.rate}%`:"")}${ln("Your equity",`<span class="gain">${fm(eq)}</span>`,"tot")}<p class="soft small" style="margin:10px 0 12px">Selling costs about 6% in fees.</p><button class="btn sm danger" data-act="sellhome">Sell and keep about ${fm(G.home.val*.94-(mo?mo.bal:0))}</button></div>`}
+  else home=`<p class="soft" style="max-width:66ch">Lenders want a credit score of at least 620 and total debt payments under 43% of your gross income. You need the down payment plus about 3% in closing costs.</p><div class="row" style="margin:16px 0 22px"><span class="lab">Down payment</span>${seg("ui.down",[[3.5,"3.5%"],[10,"10%"],[20,"20%, no mortgage insurance"]],DOWN)}</div>
+   <div class="offers">${HOMES.map((h,i)=>{const p=h.p*C.home*G.homeIdx,dn=p*DOWN/100,cl=p*.03,pm=amort(p-dn,mRate,360),extra=p*(.009+.0035+.008)/12+(DOWN<20?(p-dn)*.006/12:0),d=(loanPmts(G)+cardMins(G)+pm)/Math.max(1,gross);
+    return`<div class="offer"><h3>${h.n}</h3><div class="serif" style="font-size:2rem;line-height:1.1">${fm(p)}</div>${ln("Cash needed",fm(dn+cl))}${ln(`Mortgage at ${mRate}%`,fm(pm))}${ln("Taxes, insurance, upkeep",fm(extra))}${ln("Housing each month",fm(pm+extra),"tot")}${ln("Debt-to-income",`<span class="${d>.43?"loss":""}">${pc(d,0)}</span>`)}<button class="btn sm" data-act="buyhome" data-v="${i}">Apply for a mortgage</button></div>`}).join("")}</div>`;
+  return`<div class="head"><div><h1>Car and home</h1><p>Loan rates follow the central bank (${G.fed.toFixed(2)}%) and your credit score (${G.score??"none yet"}).</p></div></div>
+  <div class="grid"><section class="c12 sec"><div class="top"><h2>Getting around</h2>${G.car?"":`<span class="soft">Transit costs you ${fm(85*C.col*G.infl)} a month</span>`}</div>${car}</section>
+  <section class="c12 sec"><div class="top"><h2>Owning a home</h2><span class="soft">Home prices are ${chg(G.homeIdx-1)} since 2027</span></div>${home}</section></div>`}
+
+function vLearn(){const n=Object.keys(G.lessons).length;return`<div class="head"><div><h1>Lessons</h1><p>Answer two of three questions correctly to pass. Every lesson you pass gives you a lasting advantage. You've passed ${n} of ${LESSONS.length}.</p></div></div>
+  <div class="offers">${LESSONS.map(l=>{const d=G.lessons[l.id];return`<div class="offer"><h3>${l.n}</h3><p class="terms">${l.perk.replace(/^[^:]+:\s*/,"").replace(/^./,c=>c.toUpperCase())}.</p><button class="btn sm ${d?"quiet":""}" data-act="lesson" data-v="${l.id}">${d?"Passed. Review it":"Read and take the quiz"}</button></div>`}).join("")}</div>`}
+function vAch(){const got=ACH.filter(a=>G.ach[a[0]]!=null).length;return`<div class="head"><div><h1>Awards</h1><p>You've earned ${got} of ${ACH.length}.</p></div></div><div class="stamps">${ACH.map(([id,n,d])=>{const on=G.ach[id]!=null;return`<div class="stampc ${on?"":"off"}"><div class="in">${rosette(120,3,.8)}<b>${n}</b><div class="soft small">${d}${on?`<br>Earned ${dateStr(G.ach[id])}`:""}</div></div></div>`}).join("")}</div>`}
+function vReport(){const S=finalScore(G),nw=netWorth(G),well=[],imp=[];S.parts.forEach(p=>(p[2]>=70?well:imp).push(p[0].toLowerCase()));
+  return`<div class="grid"><section class="c8"><div class="note">${waves(800,300)}<div class="frame" style="grid-template-columns:auto 1fr"><div class="grade">${S.grade}</div><div><h1>${esc(G.name)}'s ${G.years} years in ${CITIES[G.city].n.split(",")[0]}</h1><p class="soft" style="margin-top:8px">${PATHS[G.path].n}, ${["relaxed","realistic","brutal"][G.diff]} difficulty. Final score ${S.total} out of 100.</p><p style="margin-top:12px">${well.length?`Strongest: ${well.join(", ")}.`:""} ${imp.length?`Room to grow: ${imp.join(", ")}.`:"An outstanding run."}</p><div class="row" style="margin-top:18px"><button class="btn primary" data-act="newgame">Play again</button><button class="btn" data-act="nav" data-v="dash">Back to overview</button></div></div></div></div></section>
+  <section class="c4 sec"><h2>By the numbers</h2>${[["Net worth",fm(nw)],["Highest net worth",fm(G.stats.peak)],["Invested, including 401(k)",fm(holdVal(G)+G.k401)],["Credit score",G.score??"none"],["Interest paid",fm(G.stats.intPaid)],["Card rewards",fm(G.stats.rewards)],["Late payments",G.stats.lateCount],["Scams avoided",G.stats.scamsAvoided],["Awards",Object.keys(G.ach).length+" of "+ACH.length]].map(([k,v])=>ln(k,v)).join("")}</section>
+  <section class="c5 sec"><h2>How the score adds up</h2>${S.parts.map(([l,w,s,v])=>`<div style="padding:8px 0"><div class="row" style="justify-content:space-between"><span>${l} <span class="soft small">${v}</span></span><b>${Math.round(w*s/100)} of ${w}</b></div><div class="meter" style="margin-top:6px"><i style="width:${s}%;background:var(${s>=70?"--gain":s>=45?"--a4":"--red"})"></i></div></div>`).join("")}</section>
+  <section class="c7 sec"><h2>The whole decade</h2><div class="chart"><canvas id="nwc"></canvas></div></section></div>`}
+
+function after(){const labels=G.hist.map(h=>dateStr(h.m)),take=id=>{const a=ANIM.has(id);ANIM.delete(id);return a};
+  const nc=$("#nwc");if(nc){const s=NWMODE&&VIEW!=="report"?[{d:G.hist.map(h=>h.a),c:css("--gain"),name:"Assets",fill:true},{d:G.hist.map(h=>h.d),c:css("--red"),name:"Debts",dash:[5,4]}]:[{d:G.hist.map(h=>h.nw),c:css("--ink"),name:"Net worth",fill:true,w:2.2}];lineChart(nc,{series:s,labels,zero:true,h:VIEW==="report"?260:280,anim:take("nwc")})}
+  const pq=$("#pxc");if(pq){const arr=G.px[SEL],n=Math.min(arr.length,RANGE+1),d=arr.slice(-n);lineChart(pq,{series:[{d,c:acol(SEL),fill:true,name:SEL}],labels:d.map((_,i)=>dateStr(G.m-(n-1-i))),h:260,fy:v=>"$"+v.toFixed(v<10?2:0),ft:v=>"$"+v.toFixed(2),padL:52,anim:take("pxc")})}
+  const bz=$("#bzc");if(bz&&G.biz){const d=G.biz.hist;lineChart(bz,{series:[{d,c:css("--ink"),fill:true,name:"Revenue"}],labels:d.map((_,i)=>dateStr(G.m-(d.length-1-i))),h:190,anim:take("bzc")})}}
+
+/* ============================ LETTERS (modals) ============================ */
+let MRES=null;
+function modal(html,cls=""){const d=$("#modal");d.classList.remove("closing");d.classList.toggle("wide",cls==="wide");const b=$("#mbody");b.innerHTML=`<div class="${d.open?"swap":""}">${html}</div>`;if(!d.open)d.showModal();b.scrollTop=0;const f=d.querySelector("[autofocus]")||d.querySelector(".choices button,.q button,button");f&&f.focus();return new Promise(r=>MRES=r)}
+function closeModal(){const d=$("#modal");if(!d.open)return Promise.resolve();if(reduced()){d.close();return Promise.resolve()}d.classList.add("closing");return new Promise(r=>setTimeout(()=>{d.close();d.classList.remove("closing");r()},170))}
+$("#modal").addEventListener("cancel",e=>{e.preventDefault();if($("#modal").dataset.dismiss==="1"){closeModal();MRES&&MRES(null)}});
+const ctx=()=>`<div class="ctx"><span>Checking <b>${fm(G.cash)}</b></span><span>Savings <b>${fm(G.hysa)}</b></span>${G.cards.length?`<span>Card credit left <b>${fm(cardAvail(G))}</b></span>`:""}<span>${G.budget.health?"Health insurance <b>yes</b>":"Health insurance <b class='loss'>none</b>"}</span></div>`;
+const choices=(arr,go)=>`<div class="choices ${go?"go":""}">${arr.map((c,i)=>`<button data-act="mpick" data-v="${c.v??i}" ${c.af?"autofocus":""}>${go?"":`<span class="dot"></span>`}<b>${c.t}</b><small>${c.sub||""}</small></button>`).join("")}</div>`;
+async function outcome(title,body,concept,lesson,extra=""){await modal(`<div class="lt"><span class="bigstamp">${concept}</span><h2 style="padding-right:0">${title}</h2><p>${body}</p>${extra}<div class="why"><h3>Why it matters</h3><p>${lesson}</p></div>${choices([{t:"Continue",sub:`Checking ${fm(G.cash)}`,af:1}],1)}</div>`)}
+async function runPending(){
+  while(G.pending.length){const p=G.pending.shift();
+    if(p.id==="taxes"){await taxLetter(p.d);continue}
+    if(p.id==="grad"||p.id==="grad2"){const sl=G.loans.find(l=>l.type==="student");await modal(`<div class="lt">${postmark(G.m)}<div class="from">From the registrar</div><h2>You graduated</h2><p>${p.id==="grad"?`You start as ${JOBS[G.job].t} at ${fm(G.salary)} a year.${sl?` Your student loan payments of ${fm(sl.pmt)} a month begin now.`:""}`:"You earned your bachelor's degree. Analyst jobs are now open to you."}</p><div class="why"><h3>Human capital</h3><p>School costs years of income up front but tends to raise what you earn for life. With a new paycheck, now is a good time to revisit your budget.</p></div>${choices([{t:"Open my budget",v:"b",af:1},{t:"Continue"}],1)}</div>`).then(v=>{if(v==="b")VIEW="budget"});continue}
+    if(p.id==="burnout"){const cost=Math.round(600*CITIES[G.city].col);await modal(`<div class="lt">${postmark(G.m)}<div class="from">A note to yourself</div><h2>You're burned out</h2><p>Months of stress caught up with you. You take a week off and spend ${fm(cost)} recovering, and your skills stall for a while.</p><div class="why"><h3>Balance</h3><p>A budget with no room for rest doesn't last. Small, planned spending on wellbeing prevents expensive crashes.</p></div>${choices([{t:"Take the week off",af:1}],1)}</div>`);G.cash-=cost;G.wb+=28;G.skill=Math.max(0,G.skill-.3);continue}
+    const e=EVI[p.id];if(!e)continue;const d=p.d||{},chs=e.ch(G,d);
+    const flag=e.scam&&G.lessons.fraud?`<p class="warn">This has the classic signs of a scam.</p>`:"";
+    const i=await modal(`<div class="lt">${postmark(G.m)}<div class="from">${MONF[G.m%12]} ${2027+Math.floor(G.m/12)}</div><h2>${e.title}</h2><p>${e.body(G,d)}</p>${flag}${ctx()}${choices(chs)}</div>`);
+    const c=chs[+i],res=c.fx(G)||"";G.wb=clamp(G.wb,0,100);log(G,`${e.title.replace(/[!"“”]/g,"")}: ${c.t.toLowerCase()}`,"");
+    await outcome(c.t,res,e.tag,e.lesson);}
+  await closeModal()}
+async function taxLetter(t){const owe=t.due>0;
+  const i=await modal(`<div class="lt">${postmark(G.m)}<div class="from">From the Internal Revenue Service</div><h2>Your ${t.year} taxes</h2><p>${owe?`You owe ${fm(t.due)} more than was withheld from your pay.`:`You overpaid during the year. Your refund is ${fm(-t.due)}.`}</p>
+   <div style="margin-top:16px">${ln("Wages",fm(t.wage))}${t.k401?ln("401(k), before tax","−"+fm(t.k401)):""}${t.other?ln("Side and business income",fm(t.other)):""}${t.ord?ln("Interest and dividends",fm(t.ord)):""}${t.gains?ln("Investment profits",fm(t.gains)):""}${ln("Standard deduction","−"+fm(STD_DED))}
+   ${ln("Federal income tax",fm(t.fed),"tot")}${ln("Social Security and Medicare",fm(t.fica))}${ln("State tax",fm(t.st))}${t.se?ln("Self-employment tax",fm(t.se)):""}${t.saved?ln("Deductions you found",`<span class="gain">−${fm(t.saved)}</span>`):""}${ln("Withheld from your pay","−"+fm(t.withheld))}
+   ${ln(owe?"You owe":"Your refund",`<span class="${owe?"loss":"gain"}">${fm(Math.abs(t.due))}</span>`,"tot")}<p class="soft small" style="margin-top:8px">You paid ${pc(t.eff)} of your income in tax overall.</p></div>
+   ${choices(owe?[{t:"Pay it now",sub:"From checking",v:"pay"},{t:"Set up a payment plan",sub:"12 months at 8% interest",v:"plan"}]:[{t:"Put the refund in savings",v:"save"},{t:"Put it in checking",v:"cash"}])}</div>`);
+  if(!owe){if(i==="save")G.hysa+=-t.due;else G.cash+=-t.due;log(G,`Tax refund of ${fm(-t.due)}`,"g")}
+  else if(i==="plan"){addLoan(G,{n:`IRS payment plan for ${t.year}`,type:"plan",bal:t.due,rate:8,term:12});log(G,`IRS payment plan for ${fm(t.due)}`,"l")}
+  else{G.cash-=t.due;log(G,`Paid ${fm(t.due)} in taxes`,"l")}
+  await outcome(owe?"Taxes paid":"Refund deposited","",owe?"Taxes":"Refund",owe?(t.other>0?"No tax is withheld from self-employment income. Set aside 25 to 30% of it, or pay estimated taxes each quarter.":"You owed because too little was withheld. Updating your W-4 form fixes that."):"A refund means you lent the government money for free all year. A bigger paycheck could have been saved or invested instead.")}
+async function lessonLetter(id){const L=LI[id];
+  const v=await modal(`<div class="lt"><div class="from">Lesson</div><h2>${L.n}</h2>${L.body.map(p=>`<p>${p}</p>`).join("")}<div class="why"><h3>Pass to unlock</h3><p>${L.perk.replace(/^[^:]+:\s*/,"").replace(/^./,c=>c.toUpperCase())}.</p></div>${choices([{t:"Take the quiz",sub:"3 questions",v:"go",af:1},{t:"Not now",v:"x"}],1)}</div>`,"wide");
+  if(v!=="go"){await closeModal();return}let right=0;
+  for(let qi=0;qi<L.q.length;qi++){const[q,opts,ans]=L.q[qi];
+    const pick=await modal(`<div class="lt"><div class="from">${L.n}, question ${qi+1} of 3</div><h2 style="font-size:1.6rem;padding-right:0">${q}</h2><div class="q">${opts.map((o,i)=>`<button data-act="mpick" data-v="${i}"><span>${o}</span></button>`).join("")}</div><div id="qafter"></div></div>`,"wide");
+    const ok=+pick===ans;if(ok)right++;
+    $("#mbody").querySelectorAll(".q button").forEach((b,i)=>{b.disabled=true;if(i===ans)b.classList.add("right");else if(i===+pick)b.classList.add("wrong")});
+    $("#qafter").innerHTML=`<p class="${ok?"gain":"loss"}" style="font-weight:600">${ok?"That's right.":`The answer is “${opts[ans]}”.`}</p>${choices([{t:qi<2?"Next question":"See your result",af:1}],1)}`;
+    $("#qafter button").focus();await new Promise(r=>MRES=r)}
+  const pass=right>=2,first=pass&&!G.lessons[id];if(pass)G.lessons[id]={score:right,m:G.m};if(first)checkAch(G);
+  await modal(`<div class="lt">${pass?`<span class="bigstamp">Passed</span>`:""}<h2 style="padding-right:0">${right} of 3 correct</h2><p>${pass?(first?`You've unlocked: ${L.perk.replace(/^[^:]+:\s*/,"")}.`:"You'd already earned this one."):"You need two correct answers to pass. Read the lesson again and retake the quiz."}</p>${choices([{t:"Done",af:1}],1)}</div>`,"wide");
+  await closeModal();commit();if(first)toast(`Lesson passed. ${L.perk.replace(/^[^:]+:\s*/,"").replace(/^./,c=>c.toUpperCase())}.`,"g")}
+function settingsLetter(){const d=$("#modal");d.dataset.dismiss="1";
+  modal(`<div class="lt"><h2 style="padding-right:0">Settings</h2>
+   <div class="lab" style="margin:18px 0 6px">Colors</div>${seg("pref.theme",[["paper","Paper"],["night","Night"],["contrast","High contrast"]],PREFS.theme,1)}
+   <div class="lab" style="margin:18px 0 6px">Text size</div>${seg("pref.fs",[[15,"Small"],[16,"Standard"],[18,"Large"],[20,"Largest"]],PREFS.fs,1)}
+   <div class="lab" style="margin:18px 0 6px">Motion</div>${seg("pref.rm",[["false","Animate"],["true","Reduce motion"]],PREFS.rm,1)}
+   <p class="soft small" style="margin-top:16px">Use Tab to move, Enter to choose, and N to end the month. Screen readers announce each result.</p>
+   ${G?`<h3 style="margin-top:22px">Move your game to another device</h3><p class="soft small">Copy your save code, then paste it into Load a game on the other device.</p><button class="btn sm" style="margin-top:8px" data-act="copysave">Copy save code</button>`:""}
+   <h3 style="margin-top:22px">Load a game</h3><div class="row" style="align-items:flex-end"><div class="grow"><label for="lcode">Save code</label><input type="text" id="lcode"></div><button class="btn sm" data-act="loadsave">Load</button></div>
+   ${choices([...(G?[{t:"Start a new game",sub:"Replaces this one",v:"new"}]:[]),{t:"Close",v:"x",af:1}],1)}</div>`).then(v=>{d.dataset.dismiss="";if(v==="new")A.newgame();else closeModal()})}
+function refreshSettings(){if($("#modal").open&&$("#modal").dataset.dismiss==="1")$("#mbody").querySelectorAll('[data-act="set"]').forEach(b=>{const k=b.dataset.k;if(k.startsWith("pref."))b.setAttribute("aria-checked",String(PREFS[k.slice(5)])===b.dataset.v)})}
+
+/* ============================ ACTIONS ============================ */
+function stampNote(delta){const slot=$("#stampslot");if(!slot)return;slot.innerHTML=`<div class="stampmark ${reduced()?"":"go"}" style="color:var(${delta>=0?"--gain":"--red"});border-color:var(${delta>=0?"--gain":"--red"})">${delta>=0?"+":"−"}${fm(Math.abs(delta))}</div>`}
+async function advance(n){if(BUSY||!G||G.over)return;BUSY=true;
+  for(let i=0;i<n;i++){const before=netWorth(G);advanceMonth(G);persist();const after_=netWorth(G),d=after_-before;
+    renderMast(true);renderTabs();if(VIEW==="dash"){ANIM.delete("nwc");renderView();countTo($("#nwv"),before,after_);stampNote(d)}else{renderView();toast(`${MONF[(G.m-1)%12]} closed. Net worth ${dm(d)}.`,d>=0?"g":"l")}
+    speak(`${dateLong(G.m-1)} closed. Net worth ${d>=0?"up":"down"} ${fm(Math.abs(d))}.`);
+    const had=G.pending.length;if(had){await new Promise(r=>setTimeout(r,reduced()?0:650));await runPending()}
+    (G.newAch||[]).forEach(a=>toast(`Award earned: ${a}`,"g"));G.newAch=[];
+    if(G.over||had)break;if(i<n-1)await new Promise(r=>setTimeout(r,reduced()?0:500))}
+  persist();renderMast();renderTabs();if(VIEW!=="dash")renderView();else{const v=$("#nwv");if(v&&!G.pending.length){}}
+  BUSY=false;
+  if(G.over){go("report");toast("That's the end of your game. Here are your results.","g")}}
+const A={
+  nav:el=>go(el.dataset.v),adv:()=>advance(1),adv3:()=>advance(3),report:()=>go("report"),
+  set:el=>{const k=el.dataset.k;let v=el.dataset.v;v=v==="true"?true:v==="false"?false:isNaN(+v)?v:+v;
+    if(k.startsWith("su.")){if(k==="su.hair")SU.av.hair=v;else SU[k.slice(3)]=v;rerenderWizard();return}
+    if(k.startsWith("pref.")){PREFS[k.slice(5)]=v;applyPrefs();refreshSettings();if(G)renderAll();else{const st=SU.step;renderTitle();SU.step=st}return}
+    if(k==="ui.nwr"){NWMODE=v;ANIM.add("nwc");renderView();return}if(k==="ui.range"){RANGE=v;ANIM.add("pxc");renderView();return}if(k==="ui.down"){DOWN=v;renderView();return}
+    if(k==="biz.re")G.biz.re=v;else setPath(G,k,v);commit()},
+  av:el=>{SU.av[el.dataset.k]=+el.dataset.v;rerenderWizard()},
+  su:el=>{SU[el.dataset.k]=el.dataset.v;rerenderWizard()},
+  sustep:el=>{const nm=$("#nm");if(nm)SU.name=nm.value.trim();SU.step=clamp(SU.step+ +el.dataset.v,0,3);rerenderWizard(true);$(".form button.primary")?.focus()},
+  begin:()=>{G=newGame({name:SU.name||"Player",av:{...SU.av},city:SU.city,path:SU.path,diff:SU.diff,years:SU.years});VIEW="dash";persist();
+    const run=()=>renderShell();if(document.startViewTransition&&!reduced())document.startViewTransition(run);else run();if(!PREFS.seen)setTimeout(tutorial,reduced()?0:400)},
+  continue:()=>{G=hasSave();VIEW=G.over?"report":"dash";renderShell();if(G.pending.length)runPending().then(commit)},
+  newgame:()=>{closeModal();MRES&&MRES(null);MRES=null;try{localStorage.removeItem(SAVE)}catch(e){}G=null;SU.step=0;renderTitle()},
+  settings:()=>settingsLetter(),
+  copysave:async()=>{try{await navigator.clipboard.writeText(btoa(unescape(encodeURIComponent(JSON.stringify(G)))));toast("Save code copied.","g")}catch(e){toast("Your browser blocked copying. Try again from a regular browser tab.","l")}},
+  loadsave:()=>{try{const s=JSON.parse(decodeURIComponent(escape(atob($("#lcode").value.trim()))));if(s.v!==3)throw 0;G=s;persist();closeModal();MRES&&MRES(null);VIEW="dash";renderShell();toast("Game loaded.","g")}catch(e){toast("That save code isn't valid. Copy it again from the other device.","l")}},
+  mpick:el=>{const r=MRES;MRES=null;r&&r(el.dataset.v)},
+  sel:el=>{SEL=el.dataset.v;ANIM.add("pxc");renderView()},
+  tset:el=>{const v=el.dataset.v;$("#tamt").value=v==="max"?Math.max(0,Math.floor(G.cash)):v},
+  buy:()=>{const v=+$("#tamt").value;if(!(v>0))return;if(v>G.cash+1e-6){toast(`You only have ${fm(G.cash)} in checking.`,"l");return}buy(G,SEL,v);log(G,`Bought ${fm(v)} of ${SEL}`);toast(`Bought ${fm(v)} of ${SEL}.`,"g");commit()},
+  sell:()=>{const v=+$("#tamt").value;if(!(v>0))return;const p=sell(G,SEL,v);if(p){log(G,`Sold ${fm(p)} of ${SEL}`);toast(`Sold ${fm(p)} of ${SEL}.`)}commit()},
+  sellall:()=>{const p=sell(G,SEL,1e12);log(G,`Sold all ${SEL} for ${fm(p)}`);toast(`Sold all ${SEL} for ${fm(p)}.`);commit()},
+  transfer:()=>{const f=$("#tf").value,t=$("#tt").value,a=+$("#tfa").value;if(f===t||!(a>0))return;const av=f==="cash"?G.cash:G.hysa;if(a>av+1e-6){toast(`That account only has ${fm(av)}.`,"l");return}G[f]-=a;G[t]+=a;log(G,`Moved ${fm(a)} to ${t==="cash"?"checking":"savings"}`);toast(`Moved ${fm(a)} to ${t==="cash"?"checking":"savings"}.`,"g");commit()},
+  opencd:()=>{const a=+$("#cda").value;if(!(a>0)||a>G.hysa){toast(`Savings only has ${fm(G.hysa)}.`,"l");return}G.hysa-=a;G.cd={amt:a,rate:+(G.fed+.2).toFixed(2),mat:G.m+12};log(G,`Opened a ${G.cd.rate}% CD with ${fm(a)}`);toast("CD opened.","g");commit()},
+  breakcd:()=>{const pen=G.cd.amt*G.cd.rate/1200*3;G.hysa+=G.cd.amt-pen;log(G,`Withdrew CD early, ${fm(pen)} penalty`,"l");G.cd=null;commit()},
+  applycard:el=>{const r=applyCard(G,el.dataset.v);log(G,r.msg,r.ok?"g":"l");toast(r.msg,r.ok?"g":"l");commit()},
+  paycard:el=>{const p=payCard(G,el.dataset.id,+$("#cp-"+el.dataset.id).value);toast(p?`Paid ${fm(p,2)}.`:"Nothing was paid. Check the balance and your checking account.",p?"g":"l");commit()},
+  paycardfull:el=>{const c=G.cards.find(c=>c.id===el.dataset.id),p=payCard(G,c.id,c.bal);toast(p?`Paid ${fm(p,2)}.`:"Not enough in checking.",p?"g":"l");commit()},
+  closecard:el=>{if(closeCard(G,el.dataset.id)){toast("Card closed. Your total limit is lower, which can raise your utilization.");commit()}},
+  payloan:el=>{const p=payLoan(G,el.dataset.id,+$("#lp-"+el.dataset.id).value);toast(p?`Paid an extra ${fm(p)}.`:"Not enough in checking.",p?"g":"l");commit()},
+  paycoll:()=>{const a=Math.min(+$("#collA").value,G.coll,Math.max(0,G.cash));if(a>0){G.cash-=a;G.coll-=a;if(G.coll<.5)G.coll=0;toast(`Paid ${fm(a)} toward collections.`,"g");commit()}},
+  apply:el=>{const r=applyJob(G,el.dataset.v);log(G,r.msg,r.ok?"g":"l");toast(r.msg,r.ok?"g":"l");commit()},
+  course:el=>{const c=COURSES.find(c=>c.id===el.dataset.v);if(G.cash<c.cost){toast(`This costs ${fm(c.cost)}. You have ${fm(G.cash)} in checking.`,"l");return}G.cash-=c.cost;G.skill=Math.min(10,G.skill+c.sk);G.courses[c.id]=G.m;log(G,`Completed ${c.n}`,"g");toast(`Completed ${c.n}. Skill +${c.sk}.`,"g");commit()},
+  evening:()=>{G.evening={left:30};addLoan(G,{n:"Evening degree loan",type:"student",bal:18000,rate:5.5,term:120,defer:true});G.stats.hadDebt=true;log(G,"Enrolled in an evening degree program");toast("Enrolled. Classes start next month.","g");commit()},
+  sellbiz:()=>{const v=Math.max(0,G.biz.profit)*12*2.5;G.cash+=v;G.ytd.gains+=v;G.biz=null;G.job=null;log(G,`Sold the business for ${fm(v)}`,"g");toast(`Business sold for ${fm(v)}. Look for a job under Career.`,"g");commit()},
+  buycar:el=>{const c=CARS[+el.dataset.v],p=c.p*G.infl;
+    if(el.dataset.k==="cash"){if(G.cash<p){toast(`You need ${fm(p)} in checking.`,"l");return}G.cash-=p}
+    else{const dn=p*.1;if(G.cash<dn){toast(`You need ${fm(dn)} for the down payment.`,"l");return}if(G.score!=null&&G.score<560){toast("Auto loan declined. Your credit score is below 560.","l");return}G.cash-=dn;addLoan(G,{n:"Auto loan, "+c.n,type:"auto",bal:p-dn,rate:loanRate(G,2.5),term:60});G.stats.hadDebt=true;G.inq.push(G.m)}
+    G.car={n:c.n,val:p*.9,price:p};log(G,`Bought a ${c.n}`,"g");toast(`You bought the ${c.n}. It lost about 10% of its value as you drove away.`);commit()},
+  sellcar:()=>{const l=G.loans.find(l=>l.type==="auto");let v=G.car.val;if(l){const pay=Math.min(l.bal,v);v-=pay;l.bal-=pay;if(l.bal<.5)G.loans=G.loans.filter(x=>x!==l)}G.cash+=v;log(G,"Sold the car");toast("Car sold.");G.car=null;commit()},
+  buyhome:el=>{const h=HOMES[+el.dataset.v],p=h.p*CITIES[G.city].home*G.homeIdx,dn=p*DOWN/100,cl=p*.03,rate=loanRate(G,2.6),pm=amort(p-dn,rate,360),gross=grossMonthly(G),d=(loanPmts(G)+cardMins(G)+pm)/Math.max(1,gross);
+    G.inq.push(G.m);
+    if(G.score==null||G.score<620){toast("Mortgage declined. Lenders need a credit score of at least 620.","l");commit();return}
+    if(d>.43){toast(`Mortgage declined. Your debt payments would be ${pc(d,0)} of your income, and the limit is 43%.`,"l");commit();return}
+    if(G.cash<dn+cl){toast(`You need ${fm(dn+cl)} in checking for the down payment and closing costs.`,"l");commit();return}
+    G.cash-=dn+cl;addLoan(G,{n:"30-year mortgage",type:"mortgage",bal:p-dn,rate,term:360});G.home={n:h.n,val:p,price:p};G.stats.hadDebt=true;
+    log(G,`Bought a ${h.n.toLowerCase()} for ${fm(p)}`,"g");toast(`Mortgage approved. The ${h.n.toLowerCase()} is yours.`,"g");checkAch(G);commit()},
+  sellhome:()=>{const m=G.loans.find(l=>l.type==="mortgage"),net=G.home.val*.94-(m?m.bal:0);G.cash+=net;G.ytd.gains+=Math.max(0,G.home.val*.94-G.home.price-250000);G.loans=G.loans.filter(l=>l!==m);log(G,`Sold the home, kept ${fm(net)}`);toast(`Home sold. You kept ${fm(net)}.`);G.home=null;G.budget.housing=2;commit()},
+  lesson:el=>lessonLetter(el.dataset.v)};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||b.disabled)return;const f=A[b.dataset.act];if(f){e.preventDefault();f(b)}});
+document.addEventListener("keydown",e=>{
+  if((e.key==="Enter"||e.key===" ")&&e.target.matches("tr[data-act]")){e.preventDefault();A[e.target.dataset.act](e.target);return}
+  if(e.key.toLowerCase()==="n"&&!e.target.matches("input,select,textarea")&&!$("#modal").open&&G&&!G.over&&!e.metaKey&&!e.ctrlKey)advance(1)});
+document.addEventListener("input",e=>{const el=e.target;if(el.id==="nm"){SU.name=el.value;return}
+  const k=el.dataset.bind;if(!k||!G)return;const v=el.tagName==="SELECT"?el.value:+el.value;setPath(G,k,v);
+  const o=document.getElementById("o-"+k);if(o)o.textContent=k.includes("auto")?v+"%":fm(v);const s=$("#bsum");if(s)s.innerHTML=budgetSummary()});
+document.addEventListener("change",e=>{if(e.target.dataset.bind&&G)commit()});
+let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>G&&$("#view")&&after(),120)});
+function tutorial(){const steps=[["Welcome to Ledger",`You're ${esc(G.name)}, starting out in ${CITIES[G.city].n}. Each turn is one month. Over ${G.years} years, try to build savings, good credit and a solid net worth without burning out.`],["Plan your money","Set your spending under Budget. Automatic savings and investing move money before you can spend it."],["Grow it","Invest under Markets, build credit under Bank and credit, improve your pay under Career, and make big purchases under Car and home."],["Expect surprises","Letters will arrive with emergencies, offers and temptations. Each one teaches a real personal-finance idea."],["When you're ready","Press End month, or the N key, to get your first paycheck."]];
+  (async()=>{for(let i=0;i<steps.length;i++){const[t,b]=steps[i];await modal(`<div class="lt"><div class="from">Step ${i+1} of ${steps.length}</div><h2 style="padding-right:0">${t}</h2><p>${b}</p>${choices([{t:i<steps.length-1?"Next":"Start playing",af:1}],1)}</div>`)}await closeModal();PREFS.seen=true;applyPrefs()})()}
+renderTitle();
+
+</script>
+</body>
+</html>
